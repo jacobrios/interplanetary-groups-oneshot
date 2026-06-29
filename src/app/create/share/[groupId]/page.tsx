@@ -146,23 +146,16 @@ export default async function CreateSharePage({ params }: Props) {
           />
         </div>
 
-        {/* Secondary: go to group */}
+        {/* Tertiary text link — per mockup screen 04 */}
         <Link
           href={`/groups/${group.id}`}
           style={{
             display: "block",
-            width: "100%",
-            padding: "0.875rem 1.5rem",
-            backgroundColor: "transparent",
-            color: "var(--text-primary)",
-            fontSize: "var(--type-body)",
-            fontWeight: 600,
-            border: "1px solid var(--border-subtle)",
-            borderRadius: "0.625rem",
-            cursor: "pointer",
             textAlign: "center",
+            padding: "0.75rem",
+            color: "var(--text-secondary)",
+            fontSize: "var(--type-body)",
             textDecoration: "none",
-            boxSizing: "border-box",
           }}
         >
           Take me to my group

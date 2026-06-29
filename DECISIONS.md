@@ -138,4 +138,39 @@ Live decision log for the gstack one-shot build. Entries are appended as decisio
 
 ---
 
+## Visual pass (second, against actual mockups)
+
+### Onboarding Step 2: playback rows inside the Orbit bubble, not a separate card
+**Decision:** The extracted group name and label-value pairs (WHO/CLIMBS/etc.) render as content inside the Orbit bubble, not in a separate card below it. The "Looks right, set up invites" button sits below the bubble as a standalone teal button.  
+**Rejected:** Separate card with teal card-footer band (what the first pass built; looks like a settings panel rather than a conversation).  
+**Why:** Mockup screen 02 clearly shows the playback rows inside the bubble. The conversation stays in one voice — Orbit surfaces the extraction, the founder confirms or goes back.
+
+### Gauge chips: real copy, 2 options
+**Decision:** Two chips only — "Stoked this exists 🎉" (IN) and "I'm out" (OUT). No MAYBE chip rendered. Vote count shown inline when > 0 ("Stoked this exists 🎉 · 3").  
+**Rejected:** Three chips labeled "I'm in!" / "Maybe" / "Next time" (first pass).  
+**Why:** Mockup screen 07 shows exactly 2 pills with these exact labels. MAYBE stays in the data model for potential future use; we just don't surface it as a chip.
+
+### Event card count format: counts in secondary color, not teal
+**Decision:** The count string ("4 In · 1 Out · 4 TBD") renders in `--text-secondary`. The teal primary action on the card is the "I'm in" RSVP button, not the count.  
+**Rejected:** Coloring the full count string teal when inCount > 0 (first pass).  
+**Why:** Mockup shows counts in gray/muted. Teal on the count competes with the teal button and misrepresents a status label as an action.
+
+### Group info emblem: circle, not rounded rectangle
+**Decision:** The group emblem renders as a 56px circle (`borderRadius: "50%"`) with a lime gradient.  
+**Why:** Mockup screen 10 shows the CC emblem as a circle. The rounded rectangle came from internalized "app icon" patterns, not from the mockup.
+
+### Group info member list: horizontal name run, no avatars
+**Decision:** Members are displayed as a single paragraph of names separated by double-spaces, matching the mockup's "Jacob Jessie Maya Sam Dev Pría" inline layout. No avatars, no vertical stacking.  
+**Why:** Mockup screen 10 shows a horizontal inline run. The vertical list with avatars that the first pass built was a common pattern, not the designed one. The compact inline run reads faster and scans as a crew, not a roster.
+
+### Share page (Step 3): "Take me to my group" is a text link
+**Decision:** "Take me to my group" renders as a plain tertiary text link, not an outlined secondary button.  
+**Why:** Mockup screen 04 shows the share action (copy link) as the teal primary and the navigation as a quiet link below it. An outlined button competes visually with the teal CTA.
+
+### Join page: Orbit bubble copy uses dynamic group name
+**Decision:** The Orbit bubble on the join screen uses the actual group name from the database, not the hardcoded "Climbing Crew" that was left in the first build.  
+**Why:** The hardcoded copy was a copy-paste artifact from the mockup's sample data. Fixed to `Hey! Keep {groupName} running so nobody has to be the organizer.`
+
+---
+
 *Entries continue to be appended live during the build.*

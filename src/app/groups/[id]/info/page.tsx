@@ -12,7 +12,6 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/current-user"
 import { parseRhythm } from "@/lib/orbit/rhythm"
 import CopyInviteLink from "../CopyInviteLink"
-import RosterAvatar from "@/app/events/[id]/RosterAvatar"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -137,7 +136,7 @@ export default async function GroupInfoPage({ params }: Props) {
             style={{
               width: 56,
               height: 56,
-              borderRadius: "0.875rem",
+              borderRadius: "50%",
               background: "linear-gradient(135deg, var(--color-lime) 0%, #86d24a 100%)",
               display: "flex",
               alignItems: "center",
@@ -195,31 +194,18 @@ export default async function GroupInfoPage({ params }: Props) {
           </InfoCard>
         )}
 
-        {/* ── Member list ──────────────────────────────────────────── */}
+        {/* ── Member list — horizontal inline name run (mockup screen 10) ── */}
         <InfoCard>
           <SectionLabel>Who</SectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-            {group.memberships.map((m) => (
-              <div key={m.user.id} style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                <RosterAvatar name={m.user.name} size={28} />
-                <span style={{ fontSize: "var(--type-body)", color: "var(--text-primary)" }}>
-                  {m.user.name}
-                </span>
-                {m.user.id === group.founderId && (
-                  <span
-                    style={{
-                      fontSize: "var(--type-eyebrow)",
-                      color: "var(--text-placeholder)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    founder
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <p
+            style={{
+              fontSize: "var(--type-body)",
+              lineHeight: "var(--leading-normal)",
+              color: "var(--text-primary)",
+            }}
+          >
+            {group.memberships.map((m) => m.user.name).join("  ")}
+          </p>
         </InfoCard>
 
         {/* ── Activity rhythm ───────────────────────────────────────── */}

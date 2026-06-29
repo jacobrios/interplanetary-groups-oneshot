@@ -275,10 +275,14 @@ function GaugeChips({
     )
   }
 
+  // Two chips per mockup (no MAYBE chip rendered): "Stoked this exists 🎉" and "I'm out"
   const chips: { label: string; response: GaugeResponse; activeColor: string }[] = [
-    { label: `I'm in!${gauge.inCount > 0 ? ` (${gauge.inCount})` : ""}`, response: GaugeResponse.IN, activeColor: "var(--color-teal)" },
-    { label: `Maybe${gauge.maybeCount > 0 ? ` (${gauge.maybeCount})` : ""}`, response: GaugeResponse.MAYBE, activeColor: "#a78bfa" },
-    { label: "Next time", response: GaugeResponse.OUT, activeColor: "var(--text-secondary)" },
+    {
+      label: `Stoked this exists 🎉${gauge.inCount > 0 ? ` · ${gauge.inCount}` : ""}`,
+      response: GaugeResponse.IN,
+      activeColor: "var(--color-teal)",
+    },
+    { label: "I'm out", response: GaugeResponse.OUT, activeColor: "var(--text-secondary)" },
   ]
 
   return (

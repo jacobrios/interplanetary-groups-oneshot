@@ -73,7 +73,7 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
           }}
         >
           <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
-            Hey! Keep Climbing Crew running on nobody has to be the organizer. No sign-up, no password. What should we call you?
+            Hey! Keep {groupName} running so nobody has to be the organizer. No sign-up, no password. What should we call you?
           </p>
         </div>
 

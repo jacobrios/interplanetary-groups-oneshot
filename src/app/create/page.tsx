@@ -468,81 +468,63 @@ export default function CreatePage() {
 
         {/* ── Step 2: Playback + confirm ────────────────────────── */}
         {step === "step2" && extracted && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            {/* Orbit confirmation bubble */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {/* Orbit bubble — playback rows live INSIDE the bubble (matches mockup screen 02) */}
             <div
               style={{
                 backgroundColor: "var(--surface-orbit)",
                 borderRadius: "4px 16px 16px 16px",
-                padding: "0.875rem 1rem",
+                padding: "1rem",
                 border: "1px solid rgba(163,230,53,0.1)",
               }}
             >
-              <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
-                Here&rsquo;s what I picked up. Does this look right?
-              </p>
-            </div>
-
-            {/* Playback card */}
-            <div
-              style={{
-                backgroundColor: "var(--surface-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "0.875rem",
-                overflow: "hidden",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
-              }}
-            >
-              {/* Card body */}
-              <div style={{ padding: "1.25rem 1.25rem 1rem" }}>
-                <p
-                  style={{
-                    fontSize: "var(--type-heading)",
-                    lineHeight: "var(--leading-tight)",
-                    fontWeight: 700,
-                    color: "var(--text-primary)",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  {extracted.groupName}
-                </p>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-                  <PlaybackRow
-                    label="WHO"
-                    value={`${founderName.trim()} + their crew`}
-                  />
-                  {extracted.activity && (
-                    <PlaybackRow
-                      label={extracted.activity.toUpperCase()}
-                      value={buildScheduleString(extracted)}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Teal footer action — the full-band primary per §7 */}
-              <button
-                onClick={handleConfirm}
-                disabled={isPending}
+              <p
                 style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "0.875rem 1.25rem",
-                  backgroundColor: isPending ? "var(--color-teal-hover)" : "var(--color-teal)",
-                  color: "#0a0a0a",
-                  fontSize: "var(--type-body)",
+                  fontSize: "var(--type-heading)",
+                  lineHeight: "var(--leading-tight)",
                   fontWeight: 700,
-                  border: "none",
-                  cursor: isPending ? "wait" : "pointer",
-                  textAlign: "center",
-                  transition: "background-color 0.15s ease",
-                  letterSpacing: "0.01em",
+                  color: "var(--text-primary)",
+                  marginBottom: "0.875rem",
                 }}
               >
-                {isPending ? "Creating your group…" : "Looks right, set up invites"}
-              </button>
+                {extracted.groupName}
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <PlaybackRow
+                  label="WHO"
+                  value={`${founderName.trim()} + their crew`}
+                />
+                {extracted.activity && (
+                  <PlaybackRow
+                    label={extracted.activity.toUpperCase()}
+                    value={buildScheduleString(extracted)}
+                  />
+                )}
+              </div>
             </div>
+
+            {/* Teal CTA below the bubble */}
+            <button
+              onClick={handleConfirm}
+              disabled={isPending}
+              style={{
+                width: "100%",
+                padding: "0.875rem 1.25rem",
+                backgroundColor: isPending ? "var(--color-teal-hover)" : "var(--color-teal)",
+                color: "#0a0a0a",
+                fontSize: "var(--type-body)",
+                fontWeight: 700,
+                border: "none",
+                borderRadius: "0.625rem",
+                cursor: isPending ? "wait" : "pointer",
+                textAlign: "center",
+                transition: "background-color 0.15s ease",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {isPending ? "Creating your group…" : "Looks right, set up invites"}
+            </button>
 
             {/* Edit link */}
             <button

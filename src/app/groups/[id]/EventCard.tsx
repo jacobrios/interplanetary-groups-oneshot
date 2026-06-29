@@ -88,9 +88,7 @@ export default function EventCard({
           {venueLabel && <span style={{ color: "var(--border-medium)" }}> · </span>}
           {venueLabel && venueLabel}
           <span style={{ color: "var(--border-medium)" }}> · </span>
-          <span style={{ color: inCount > 0 ? "var(--color-teal)" : "var(--text-secondary)" }}>
-            {countsLabel}
-          </span>
+          <span>{countsLabel}</span>
         </p>
       </Link>
 

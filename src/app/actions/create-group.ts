@@ -4,6 +4,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { provisionFounderGroup } from "@/lib/groups/provision"
+import { reconcileScheduledEvents } from "@/lib/orbit/reconcile"
 
 export interface CreateGroupState {
   errors?: {
@@ -85,6 +86,19 @@ export async function createGroupAction(
   } catch {
     return {
       errors: { general: "Something went wrong creating your group. Please try again." },
+    }
+  }
+
+  // Immediately seed the first upcoming event so the group home is alive on day
+  // one. The cron runs daily but fires for the first time only after group
+  // creation, which would leave the home showing "No upcoming events yet" until
+  // tomorrow. Narrowing to this group avoids touching other groups.
+  if (recurringActivities) {
+    try {
+      await reconcileScheduledEvents(new Date(), { groupId: group.id })
+    } catch (err) {
+      // Non-fatal: the group was created successfully. The cron will catch up.
+      console.error("[create-group] post-provision reconcile failed:", err)
     }
   }
 

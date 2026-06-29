@@ -45,8 +45,13 @@ export type ReconcileResult =
  * @param now  The reference instant.  Passed explicitly so callers (cron
  *             handler, tests) control the clock without mocking Date.now().
  */
-export async function reconcileScheduledEvents(now: Date): Promise<ReconcileResult[]> {
-  const groups = await prisma.group.findMany()
+export async function reconcileScheduledEvents(
+  now: Date,
+  options: { groupId?: string } = {}
+): Promise<ReconcileResult[]> {
+  const groups = await prisma.group.findMany(
+    options.groupId ? { where: { id: options.groupId } } : undefined
+  )
   const results: ReconcileResult[] = []
 
   for (const group of groups) {

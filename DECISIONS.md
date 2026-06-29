@@ -129,4 +129,13 @@ Live decision log for the gstack one-shot build. Entries are appended as decisio
 
 ---
 
+## Bug fixes
+
+### Empty home after onboarding: reconcile never fired at creation time
+**Root cause:** `provisionFounderGroup` saves `recurringActivities` to the group row, but nothing calls `reconcileScheduledEvents` at that point. The only caller was the daily cron endpoint (`/api/cron/orbit`), so a new group would show "No upcoming events yet" until the cron fired — in local dev, never.  
+**Fix:** `createGroupAction` now calls `reconcileScheduledEvents(new Date(), { groupId: group.id })` immediately after provision, narrowed to the new group so it doesn't touch other groups. `reconcileScheduledEvents` gained an optional `{ groupId }` filter for this. The call is wrapped in a non-fatal try/catch: if it fails, the group was still created and the cron will catch up.  
+**Verified:** fresh test group with Mon/Wed/Fri 8am LA timezone rhythm → reconcile created the event and Orbit's announcement in one call → group home showed the event card.
+
+---
+
 *Entries continue to be appended live during the build.*

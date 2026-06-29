@@ -9,6 +9,27 @@ interface SetRsvpInput {
   status: RsvpStatus
 }
 
+/**
+ * Internal RSVP upsert by Prisma User.id (not supabaseAuthId).
+ * Used by the spark flow to seed RSVPs for gauge IN-voters.
+ * Not exposed to client actions — only called server-side by trusted logic.
+ */
+export async function seedRsvpByUserId({
+  userId,
+  eventId,
+  status,
+}: {
+  userId: string
+  eventId: string
+  status: RsvpStatus
+}): Promise<Rsvp> {
+  return prisma.rsvp.upsert({
+    where: { eventId_userId: { eventId, userId } },
+    create: { eventId, userId, status },
+    update: { status },
+  })
+}
+
 interface SetRsvpResult {
   rsvp: Rsvp
 }

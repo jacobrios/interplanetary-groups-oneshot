@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #f4f4f5;
 
-  /* ─── Design tokens ─────────────────────────────── */
-
-  /* Color: teal (primary action) and lime (Orbit brand) */
-  --color-teal: #2dd4bf;        /* single primary action */
+  /* ─── Color: teal (primary action) and lime (Orbit brand) ─────── */
+  --color-teal: #2dd4bf;
   --color-teal-hover: #14b8a6;
-  --color-lime: #a3e635;        /* Orbit brand — never a primary action */
+  --color-teal-dim: rgba(45,212,191,0.12);
+  --color-lime: #a3e635;
+  --color-lime-dim: rgba(163,230,53,0.12);
 
-  /* Type scale (rem values honor device text size; unitless line-heights) */
+  /* ─── Type scale ─────────────────────────────────────────────────
+     Sizes in rem (honor device text setting); unitless line-heights.
+     Nothing smaller than --type-eyebrow anywhere.
+  */
   --type-display:  1.75rem;   /* 28px */
   --type-title:    1.5rem;    /* 24px */
   --type-heading:  1.25rem;   /* 20px */
@@ -23,33 +26,30 @@
   --leading-tight:  1.15;
   --leading-normal: 1.5;
 
-  /* Neutrals (dark-first) */
-  --surface-page:   #0a0a0a;
-  --surface-card:   #141414;
-  --surface-input:  #1a1a1a;
-  --border-subtle:  #2a2a2a;
-  --text-primary:   #f4f4f5;
-  --text-secondary: #a1a1aa;
+  /* ─── Surfaces (dark-first) ──────────────────────────────────── */
+  --surface-page:       #0a0a0a;
+  --surface-card:       #111111;
+  --surface-card-hover: #161616;
+  --surface-input:      #181818;
+  --surface-elevated:   #1c1c1c;
+
+  /* ─── Borders ─────────────────────────────────────────────────── */
+  --border-subtle:  #222222;
+  --border-medium:  #2e2e2e;
+
+  /* ─── Text ────────────────────────────────────────────────────── */
+  --text-primary:     #f4f4f5;
+  --text-secondary:   #a1a1aa;
   --text-placeholder: #52525b;
 
-  /*
-   * Chat-bubble surface tokens (build-notes §7 "chat voice system").
-   * These satisfy the structural rule — Orbit, member, and self-bubble must be
-   * distinguishable at a glance by structure and weight, not hue — using
-   * on-system neutrals rather than the two reserved chromas (teal = primary
-   * action; lime = Orbit brand).  Values are functional placeholders; the
-   * pixel-level visual pass against the walkthrough is a deferred phase.
-   *
-   * --surface-orbit: soft muted fill for Orbit's speech bubbles.
-   * --surface-bubble-member: low-fill background when an outlined-only bubble
-   *   needs a hint of fill (member bubbles are primarily outlined).
-   * --surface-self: the viewer's "strongest fill" bubble — a neutral step
-   *   above surface-card, provably NOT teal (teal reads as a button) and NOT
-   *   lime (lime reads as Orbit).
-   */
-  --surface-orbit:         #1e2a20; /* muted green-tinted dark — reads as Orbit without being lime */
-  --surface-bubble-member: #1a1a1a; /* = surface-input; low fill, outlined primarily */
-  --surface-self:          #232323; /* strongest neutral fill — darker than surface-card */
+  /* ─── Chat voice system (build-notes §7) ─────────────────────── */
+  --surface-orbit:         #141f15;   /* muted green-dark for Orbit bubbles */
+  --surface-bubble-member: #161616;   /* low-fill member bubble background  */
+  --surface-self:          #1e1e1e;   /* viewer's own messages — strongest neutral */
+
+  /* ─── Elevation / shadow ─────────────────────────────────────── */
+  --shadow-card:  0 2px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 @theme inline {
@@ -59,15 +59,47 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark-first: no prefers-color-scheme override needed — all tokens are dark. */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Focus: visible ring that never uses color alone ─────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+/* ─── Scrollbar (webkit) — subtle ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f3f;
+}
+
+/* ─── Selection ────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(45,212,191,0.2);
+  color: var(--text-primary);
 }

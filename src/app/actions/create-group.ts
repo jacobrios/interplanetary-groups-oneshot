@@ -13,14 +13,27 @@ export interface CreateGroupState {
   }
 }
 
+/**
+ * Creates a group with extracted rhythm data from the onboarding wizard.
+ *
+ * Accepts structured rhythm fields from the Anthropic extraction step.
+ * The founder's session is minted here (or reused if one exists) — same
+ * auth pattern as the original stub.
+ */
 export async function createGroupAction(
   _prevState: CreateGroupState,
   formData: FormData
 ): Promise<CreateGroupState> {
   const founderName = (formData.get("founderName") as string | null)?.trim() ?? ""
   const groupName = (formData.get("groupName") as string | null)?.trim() ?? ""
+  const timeZone = (formData.get("timeZone") as string | null)?.trim() || "UTC"
 
-  // Validate required fields
+  // Optional rhythm fields from the extraction step
+  const activity = (formData.get("activity") as string | null)?.trim() || null
+  const daysOfWeekRaw = formData.get("daysOfWeek") as string | null
+  const timeLocal = (formData.get("timeLocal") as string | null)?.trim() || null
+  const durationMinutesRaw = formData.get("durationMinutes") as string | null
+
   const errors: CreateGroupState["errors"] = {}
   if (!founderName) errors.founderName = "Your name is required."
   if (!groupName) errors.groupName = "Group name is required."
@@ -28,9 +41,6 @@ export async function createGroupAction(
 
   const supabase = await createClient()
 
-  // Auth-layer guard: reuse an existing session rather than minting a new
-  // anonymous user. This, combined with the data-layer guard in
-  // provisionFounderGroup, prevents duplicate ghost accounts (build-notes §3).
   let {
     data: { user },
   } = await supabase.auth.getUser()
@@ -39,13 +49,27 @@ export async function createGroupAction(
     const { data, error } = await supabase.auth.signInAnonymously()
     if (error || !data.user) {
       return {
-        errors: {
-          general:
-            "Could not create a session. Please try again.",
-        },
+        errors: { general: "Could not create a session. Please try again." },
       }
     }
     user = data.user
+  }
+
+  // Build recurringActivities rhythm if we have enough structured data
+  let recurringActivities: unknown = null
+  if (activity && daysOfWeekRaw && timeLocal) {
+    const daysOfWeek = JSON.parse(daysOfWeekRaw) as number[]
+    const durationMinutes = durationMinutesRaw ? parseInt(durationMinutesRaw, 10) : null
+    recurringActivities = [
+      {
+        activity,
+        title: `${groupName} ${activity}`,
+        daysOfWeek,
+        timeLocal,
+        cadence: "weekly",
+        durationMinutes: isNaN(durationMinutes ?? NaN) ? null : durationMinutes,
+      },
+    ]
   }
 
   let group: Awaited<ReturnType<typeof provisionFounderGroup>>["group"]
@@ -54,15 +78,15 @@ export async function createGroupAction(
       supabaseAuthId: user.id,
       founderName,
       groupName,
+      timeZone,
+      recurringActivities,
     })
     group = result.group
   } catch {
     return {
-      errors: {
-        general: "Something went wrong creating your group. Please try again.",
-      },
+      errors: { general: "Something went wrong creating your group. Please try again." },
     }
   }
 
-  redirect(`/groups/${group.id}`)
+  redirect(`/create/share/${group.id}`)
 }

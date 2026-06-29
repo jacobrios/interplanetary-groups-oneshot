@@ -2,13 +2,13 @@
 //
 // Shared date/time formatting helpers for event display.
 //
-// These are extracted from the inline helpers in src/app/events/[id]/page.tsx
-// so that the event-detail page and the compact home-screen card share a
-// single source of truth.  The logic is unchanged from the original.
+// Timezone-aware: all functions accept an optional `timeZone` (IANA string,
+// e.g. "America/Los_Angeles"). Defaults to "UTC" for callers that don't yet
+// have group timezone context.  Fixes the parked UTC-display debt from
+// build-notes §11 (event-detail and orbit-scheduled-event slices).
 //
-// All times are formatted as UTC — timezone-aware display is a deferred
-// fast-follow (requires storing an event timezone and reading the viewer's
-// locale; see §11 tech debt).
+// CRITICAL COUPLING (build-notes §11): this file and announce.ts must both
+// use the timezone so card display and feed announcement always agree.
 
 /**
  * Formats an event's start (and optional end) as a compact display string.
@@ -16,36 +16,46 @@
  * Uses three-letter weekday abbreviations per CLAUDE.md §copy.
  * Uses "to" between times — no em/en dashes.
  *
- * Examples:
+ * Examples (America/Los_Angeles):
  *   "Sun, Jul 19 · 5pm"
  *   "Sun, Jul 19 · 5pm to 8pm"
  */
-export function formatEventDate(startsAt: Date, endsAt: Date | null): string {
-  const utc = { timeZone: "UTC" } as const
+export function formatEventDate(
+  startsAt: Date,
+  endsAt: Date | null,
+  timeZone = "UTC"
+): string {
+  const tz = { timeZone } as const
 
-  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short", ...utc }).format(startsAt)
-  const month = new Intl.DateTimeFormat("en-US", { month: "short", ...utc }).format(startsAt)
-  const day = new Intl.DateTimeFormat("en-US", { day: "numeric", ...utc }).format(startsAt)
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short", ...tz }).format(startsAt)
+  const month = new Intl.DateTimeFormat("en-US", { month: "short", ...tz }).format(startsAt)
+  const day = new Intl.DateTimeFormat("en-US", { day: "numeric", ...tz }).format(startsAt)
 
-  const startTime = formatTime(startsAt)
+  const startTime = formatTime(startsAt, timeZone)
 
   if (!endsAt) {
     return `${weekday}, ${month} ${day} · ${startTime}`
   }
 
-  const endTime = formatTime(endsAt)
-  // "to" per CLAUDE.md copy rules: no em or en dashes in user-facing copy.
+  const endTime = formatTime(endsAt, timeZone)
   return `${weekday}, ${month} ${day} · ${startTime} to ${endTime}`
 }
 
 /**
- * Formats a UTC time as "10am", "2:30pm", etc.
+ * Formats a time as "10am", "2:30pm", etc., in the given timezone.
  * Minutes are omitted when the time is on the hour.
  */
-export function formatTime(date: Date): string {
-  const h = date.getUTCHours()
-  const m = date.getUTCMinutes()
-  const ampm = h < 12 ? "am" : "pm"
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
-  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, "0")}${ampm}`
+export function formatTime(date: Date, timeZone = "UTC"): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone,
+  }).formatToParts(date)
+
+  const h = parts.find((p) => p.type === "hour")?.value ?? "12"
+  const m = parts.find((p) => p.type === "minute")?.value ?? "00"
+  const ampm = (parts.find((p) => p.type === "dayPeriod")?.value ?? "AM").toLowerCase()
+
+  return m === "00" ? `${h}${ampm}` : `${h}:${m}${ampm}`
 }

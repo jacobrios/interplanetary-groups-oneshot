@@ -2,15 +2,11 @@
 "use client"
 
 // Controlled message input bar — purely presentational.
-// All state (optimistic messages, transition, error) lives in GroupHome,
-// which passes down the value, the change handler, and the form action.
+// All state lives in GroupHome; this component is display only.
 //
-// Send arrow color per build-notes §7:
-// - Dim/inactive (--text-placeholder) when the input is empty.
-// - Teal (--color-teal) once the viewer has typed.
-// This contextual teal coexists with the card's persistent "I'm in" teal
-// because a contextual action (only live while composing) is not a second
-// persistent primary — it does not violate one-primary-action-per-screen.
+// Send arrow: dim (--text-placeholder) when empty, teal when text is present.
+// Per build-notes §7: contextual teal on the send arrow is not a second persistent
+// primary — it only appears while composing text.
 
 import { useId } from "react"
 
@@ -38,8 +34,10 @@ export default function ChatInput({
     <div
       style={{
         borderTop: "1px solid var(--border-subtle)",
-        backgroundColor: "var(--surface-page)",
-        padding: "0.75rem 1rem",
+        backgroundColor: "rgba(10,10,10,0.92)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        padding: "0.625rem 1rem 0.75rem",
         flexShrink: 0,
       }}
     >
@@ -47,9 +45,8 @@ export default function ChatInput({
         <p
           style={{
             fontSize: "var(--type-meta)",
-            lineHeight: "var(--leading-normal)",
             color: "#f87171",
-            marginBottom: "0.5rem",
+            marginBottom: "0.375rem",
           }}
         >
           {errorMsg}
@@ -61,7 +58,7 @@ export default function ChatInput({
           e.preventDefault()
           onSubmit(new FormData(e.currentTarget))
         }}
-        style={{ display: "flex", gap: "0.5rem" }}
+        style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
       >
         <input type="hidden" name="groupId" value={groupId} />
 
@@ -73,13 +70,13 @@ export default function ChatInput({
           name="body"
           type="text"
           autoComplete="off"
-          placeholder="Send a message…"
+          placeholder="Message the group…"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={isPending}
           style={{
             flex: 1,
-            padding: "0.5rem 0.75rem",
+            padding: "0.5rem 0.875rem",
             backgroundColor: "var(--surface-input)",
             border: "1px solid var(--border-subtle)",
             borderRadius: "1.5rem",
@@ -87,10 +84,16 @@ export default function ChatInput({
             fontSize: "var(--type-body)",
             outline: "none",
             caretColor: "var(--color-teal)",
+            transition: "border-color 0.15s ease",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-medium)"
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-subtle)"
           }}
         />
 
-        {/* Send arrow: dim when empty, teal when the viewer has typed */}
         <button
           type="submit"
           disabled={!hasText || isPending}
@@ -100,22 +103,21 @@ export default function ChatInput({
             height: 36,
             borderRadius: "50%",
             border: "none",
-            backgroundColor: "transparent",
+            backgroundColor: hasText ? "rgba(45,212,191,0.12)" : "transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: hasText && !isPending ? "pointer" : "default",
             flexShrink: 0,
-            alignSelf: "center",
-            transition: "color 0.15s ease",
+            transition: "all 0.15s ease",
             color: hasText ? "var(--color-teal)" : "var(--text-placeholder)",
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
             <path
-              d="M10 16V4M10 4L5 9M10 4L15 9"
+              d="M9 14V4M9 4L4.5 8.5M9 4L13.5 8.5"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.75"
               strokeLinecap="round"
               strokeLinejoin="round"
             />

@@ -2,30 +2,38 @@
 "use client"
 
 // Pure display component for the scrollable chat feed.
-// Receives its message list as a prop — the optimistic state is managed by
-// the parent GroupHome island, which passes either the server-derived list
-// or an optimistically-extended version.
+// Receives its message list from the parent GroupHome island.
 //
 // Chat voice system per build-notes §7:
 // - Orbit: lime avatar (no name label), --surface-orbit fill.
 // - Other member: name label (no avatar), outlined low-fill bubble.
-// - Viewer (self): right-aligned, --surface-self (strongest neutral, not teal,
-//   not lime).
-// - No bubble tails anywhere in the feed (only the onboarding Step 1 bubble
-//   gets a tail — see §7 "one onboarding bubble-tail exception").
-// - Chat body stays at --type-body (17px), never shrunk (§7 firm rule).
+// - Viewer (self): right-aligned, --surface-self (strongest neutral, not teal, not lime).
+//
+// Gauge chips: ORBIT messages with a gauge attached render interest-gauge
+// chips below the bubble (IN / MAYBE / OUT). Chip taps call gaugeVoteAction.
 
-import { MessageAuthor } from "@prisma/client"
-import { useRef, useEffect } from "react"
+import { MessageAuthor, GaugeResponse } from "@prisma/client"
+import { useRef, useEffect, useTransition } from "react"
+import { gaugeVoteAction } from "@/app/actions/gauge-vote"
+
+export interface GaugeData {
+  id: string
+  body: string
+  inCount: number
+  maybeCount: number
+  viewerVote: GaugeResponse | null
+  closedAt: Date | null
+  eventId: string | null
+}
 
 export interface FeedMessage {
   id: string
   authorType: MessageAuthor
   authorId: string | null
-  authorName: string | null // null for Orbit
+  authorName: string | null
   body: string
   createdAt: Date
-  /** True while the message is optimistic (not yet confirmed by the server). */
+  gauge?: GaugeData | null
   isPending?: boolean
 }
 
@@ -37,13 +45,6 @@ interface Props {
 export default function MessageFeed({ messages, viewerId }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Scroll to the bottom sentinel on mount (so the feed opens at the most
-  // recent messages) and whenever the message count changes (so the viewer's
-  // just-sent optimistic message is immediately visible).
-  // Dependency is messages.length (a primitive) not messages (new array ref
-  // every render), so the effect only fires when messages are added/removed.
-  // When the feed is empty the sentinel is not rendered, bottomRef.current is
-  // null, and the optional-chain makes this a no-op.
   useEffect(() => {
     bottomRef.current?.scrollIntoView()
   }, [messages.length])
@@ -96,49 +97,43 @@ export default function MessageFeed({ messages, viewerId }: Props) {
               flexDirection: "column",
               alignItems: isOrbit ? "flex-start" : isSelf ? "flex-end" : "flex-start",
               opacity: msg.isPending ? 0.65 : 1,
-              transition: "opacity 0.1s ease",
+              transition: "opacity 0.15s ease",
             }}
           >
             {/* Orbit: lime avatar + muted fill, no name label */}
             {isOrbit && (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem" }}>
-                <div
-                  aria-label="Orbit"
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-lime)",
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.6875rem",
-                    fontWeight: 700,
-                    color: "#0a0a0a",
-                  }}
-                >
-                  O
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "var(--surface-orbit)",
-                    borderRadius: "4px 16px 16px 16px",
-                    padding: "0.5rem 0.75rem",
-                    maxWidth: "80%",
-                  }}
-                >
-                  <p
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "85%" }}>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem" }}>
+                  <OrbitAvatar />
+                  <div
                     style={{
-                      fontSize: "var(--type-body)",
-                      lineHeight: "var(--leading-normal)",
-                      color: "var(--text-primary)",
-                      margin: 0,
+                      backgroundColor: "var(--surface-orbit)",
+                      borderRadius: "4px 16px 16px 16px",
+                      padding: "0.5rem 0.75rem",
+                      border: "1px solid rgba(163,230,53,0.08)",
                     }}
                   >
-                    {msg.body}
-                  </p>
+                    <p
+                      style={{
+                        fontSize: "var(--type-body)",
+                        lineHeight: "var(--leading-normal)",
+                        color: "var(--text-primary)",
+                        margin: 0,
+                      }}
+                    >
+                      {msg.body}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Interest gauge chips — shown below Orbit's gauge message */}
+                {msg.gauge && (
+                  <GaugeChips
+                    gauge={msg.gauge}
+                    viewerId={viewerId}
+                    messageId={msg.id}
+                  />
+                )}
               </div>
             )}
 
@@ -183,7 +178,7 @@ export default function MessageFeed({ messages, viewerId }: Props) {
                 <div
                   style={{
                     backgroundColor: "var(--surface-self)",
-                    border: "1px solid var(--border-subtle)",
+                    border: "1px solid rgba(255,255,255,0.06)",
                     borderRadius: "16px 4px 16px 16px",
                     padding: "0.5rem 0.75rem",
                   }}
@@ -204,8 +199,121 @@ export default function MessageFeed({ messages, viewerId }: Props) {
           </div>
         )
       })}
-      {/* Bottom sentinel — scrolled into view on mount and on message-count change */}
       <div ref={bottomRef} />
+    </div>
+  )
+}
+
+// ─── Orbit avatar ─────────────────────────────────────────────────────────────
+
+function OrbitAvatar() {
+  return (
+    <div
+      aria-label="Orbit"
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: "50%",
+        backgroundColor: "var(--color-lime)",
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.6875rem",
+        fontWeight: 700,
+        color: "#0a0a0a",
+        boxShadow: "0 0 6px rgba(163,230,53,0.2)",
+      }}
+    >
+      O
+    </div>
+  )
+}
+
+// ─── Interest gauge chips ─────────────────────────────────────────────────────
+
+function GaugeChips({
+  gauge,
+  viewerId,
+  messageId: _messageId,
+}: {
+  gauge: GaugeData
+  viewerId: string | null
+  messageId: string
+}) {
+  const [isPending, startTransition] = useTransition()
+
+  const isClosed = !!gauge.closedAt
+  const viewerVote = gauge.viewerVote
+
+  function vote(response: GaugeResponse) {
+    if (!viewerId || isClosed || isPending) return
+    startTransition(async () => {
+      const fd = new FormData()
+      fd.set("gaugeId", gauge.id)
+      fd.set("response", response)
+      await gaugeVoteAction({}, fd)
+    })
+  }
+
+  if (isClosed && gauge.eventId) {
+    return (
+      <div
+        style={{
+          marginLeft: "2.25rem",
+          padding: "0.375rem 0.625rem",
+          backgroundColor: "rgba(45,212,191,0.08)",
+          border: "1px solid rgba(45,212,191,0.2)",
+          borderRadius: "0.5rem",
+          display: "inline-block",
+        }}
+      >
+        <p style={{ fontSize: "var(--type-meta)", color: "var(--color-teal)", margin: 0 }}>
+          Event created! Check the card above.
+        </p>
+      </div>
+    )
+  }
+
+  const chips: { label: string; response: GaugeResponse; activeColor: string }[] = [
+    { label: `I'm in!${gauge.inCount > 0 ? ` (${gauge.inCount})` : ""}`, response: GaugeResponse.IN, activeColor: "var(--color-teal)" },
+    { label: `Maybe${gauge.maybeCount > 0 ? ` (${gauge.maybeCount})` : ""}`, response: GaugeResponse.MAYBE, activeColor: "#a78bfa" },
+    { label: "Next time", response: GaugeResponse.OUT, activeColor: "var(--text-secondary)" },
+  ]
+
+  return (
+    <div
+      style={{
+        marginLeft: "2.25rem",
+        display: "flex",
+        gap: "0.5rem",
+        flexWrap: "wrap",
+      }}
+    >
+      {chips.map((chip) => {
+        const isActive = viewerVote === chip.response
+        return (
+          <button
+            key={chip.response}
+            onClick={() => vote(chip.response)}
+            disabled={!viewerId || isClosed || isPending}
+            style={{
+              padding: "0.375rem 0.75rem",
+              backgroundColor: isActive ? "transparent" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${isActive ? chip.activeColor : "var(--border-subtle)"}`,
+              borderRadius: "999px",
+              color: isActive ? chip.activeColor : "var(--text-secondary)",
+              fontSize: "var(--type-meta)",
+              fontWeight: isActive ? 600 : 400,
+              cursor: viewerId && !isClosed ? "pointer" : "default",
+              transition: "all 0.15s ease",
+              opacity: isPending ? 0.6 : 1,
+            }}
+          >
+            {chip.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

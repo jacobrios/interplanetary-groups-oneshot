@@ -84,7 +84,7 @@ export async function reconcileScheduledEvents(now: Date): Promise<ReconcileResu
         groupId,
         authorType: MessageAuthor.ORBIT,
         authorId: null,
-        body: buildAnnouncement(event, rhythm),
+        body: buildAnnouncement(event, rhythm, timeZone ?? "UTC"),
       })
 
       // Step f: record success

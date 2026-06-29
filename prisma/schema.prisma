@@ -20,6 +20,8 @@ model User {
   rsvps          Rsvp[]
   foundedGroups  Group[]
   messages       Message[]
+  initiatedGauges Gauge[]
+  gaugeVotes     GaugeVote[]
 }
 
 model ContactMethod {
@@ -53,6 +55,7 @@ model Group {
   memberships         Membership[]
   events              Event[]
   messages            Message[]
+  gauges              Gauge[]
 }
 
 model Membership {
@@ -143,10 +146,12 @@ model Message {
   authorType MessageAuthor
   authorId   String?       // set when MEMBER; null for ORBIT
   body       String
+  gaugeId    String?       // set when this ORBIT message is an interest-gauge prompt
   createdAt  DateTime      @default(now())
 
-  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  gauge  Gauge? @relation(fields: [gaugeId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([authorId])
@@ -155,4 +160,58 @@ model Message {
 enum MessageAuthor {
   MEMBER
   ORBIT
+}
+
+// ── Interest gauge (spontaneous-event spark flow) ─────────────────────────────
+
+/**
+ * An interest gauge is posted by Orbit when it detects a spark in the feed.
+ * Members tap chips (IN / MAYBE / OUT) to vote. At threshold IN votes
+ * (including the initiator's auto-vote), Orbit creates an event and seeds
+ * the RSVPs from IN voters.
+ *
+ * closedAt is set when the gauge resolves (event created) or dies (one bump
+ * exhausted per build-notes §5 "one-bump rule").
+ */
+model Gauge {
+  id          String      @id @default(cuid())
+  groupId     String
+  initiatorId String      // the member whose message sparked the gauge
+  body        String      // the activity or idea being gauged
+  eventId     String?     // set when threshold reached and event created
+  threshold   Int         @default(3)
+  bumped      Boolean     @default(false) // true after the one allowed re-surface bump
+  closedAt    DateTime?   // set when resolved or dead
+  createdAt   DateTime    @default(now())
+
+  group       Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  initiator   User        @relation(fields: [initiatorId], references: [id])
+  votes       GaugeVote[]
+  messages    Message[]
+
+  @@index([groupId])
+}
+
+/**
+ * One vote per user per gauge. response is IN (yes!), MAYBE, or OUT (next time).
+ * The @@unique constraint prevents double-voting.
+ */
+model GaugeVote {
+  id        String        @id @default(cuid())
+  gaugeId   String
+  userId    String
+  response  GaugeResponse
+  createdAt DateTime      @default(now())
+
+  gauge Gauge @relation(fields: [gaugeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gaugeId, userId])
+  @@index([gaugeId])
+}
+
+enum GaugeResponse {
+  IN
+  MAYBE
+  OUT
 }

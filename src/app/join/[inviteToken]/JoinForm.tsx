@@ -7,7 +7,7 @@ import { joinGroupAction, type JoinGroupState } from "@/app/actions/join-group"
 interface Props {
   groupName: string
   inviteToken: string
-  currentName: string | null // null = new visitor; non-null = returning session
+  currentName: string | null
 }
 
 const initialState: JoinGroupState = {}
@@ -20,6 +20,7 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
       style={{
         minHeight: "100dvh",
         backgroundColor: "var(--surface-page)",
+        background: "radial-gradient(ellipse at top, rgba(45,212,191,0.04) 0%, transparent 60%), var(--surface-page)",
         color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
@@ -29,30 +30,54 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
         fontFamily: "var(--font-geist-sans, system-ui, sans-serif)",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "28rem" }}>
-        <h1
+      <div style={{ width: "100%", maxWidth: "26rem" }}>
+
+        {/* Orbit avatar + group name */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2rem" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              backgroundColor: "var(--color-lime)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.875rem",
+              fontWeight: 700,
+              color: "#0a0a0a",
+              flexShrink: 0,
+              boxShadow: "0 0 12px rgba(163,230,53,0.3)",
+            }}
+          >
+            O
+          </div>
+          <div>
+            <p style={{ fontSize: "var(--type-eyebrow)", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.125rem" }}>
+              You&rsquo;re invited to
+            </p>
+            <p style={{ fontSize: "var(--type-heading)", fontWeight: 700, color: "var(--text-primary)", lineHeight: "var(--leading-tight)" }}>
+              {groupName}
+            </p>
+          </div>
+        </div>
+
+        {/* Orbit bubble */}
+        <div
           style={{
-            fontSize: "var(--type-display)",
-            lineHeight: "var(--leading-tight)",
-            fontWeight: 700,
-            marginBottom: "0.5rem",
+            backgroundColor: "var(--surface-orbit)",
+            borderRadius: "4px 16px 16px 16px",
+            padding: "0.875rem 1rem",
+            border: "1px solid rgba(163,230,53,0.1)",
+            marginBottom: "1.5rem",
           }}
         >
-          Join {groupName}
-        </h1>
-        <p
-          style={{
-            fontSize: "var(--type-meta)",
-            lineHeight: "var(--leading-normal)",
-            color: "var(--text-secondary)",
-            marginBottom: "2rem",
-          }}
-        >
-          No sign-up needed. You can add an email later to keep access.
-        </p>
+          <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
+            Hey! Keep Climbing Crew running on nobody has to be the organizer. No sign-up, no password. What should we call you?
+          </p>
+        </div>
 
         <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-          {/* Always include hidden inviteToken and hasSession flags */}
           <input type="hidden" name="inviteToken" value={inviteToken} />
           <input type="hidden" name="hasSession" value={currentName ? "1" : ""} />
 
@@ -62,7 +87,6 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
             </p>
           )}
 
-          {/* NEW VISITOR — show editable name field */}
           {currentName === null ? (
             <div>
               <label
@@ -70,7 +94,6 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
                 style={{
                   display: "block",
                   fontSize: "var(--type-label)",
-                  lineHeight: "var(--leading-normal)",
                   color: "var(--text-secondary)",
                   marginBottom: "0.375rem",
                 }}
@@ -81,6 +104,7 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
                 id="memberName"
                 name="memberName"
                 type="text"
+                autoFocus
                 autoComplete="given-name"
                 placeholder="e.g. Jordan"
                 style={{
@@ -93,33 +117,21 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
                   fontSize: "var(--type-body)",
                   outline: "none",
                   boxSizing: "border-box",
+                  transition: "border-color 0.15s ease",
                 }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-teal)" }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-subtle)" }}
               />
               {state.errors?.memberName && (
-                <p
-                  style={{
-                    fontSize: "var(--type-meta)",
-                    color: "#f87171",
-                    marginTop: "0.25rem",
-                  }}
-                >
+                <p style={{ fontSize: "var(--type-meta)", color: "#f87171", marginTop: "0.25rem" }}>
                   {state.errors.memberName}
                 </p>
               )}
             </div>
           ) : (
-            /* RETURNING SESSION — read-only "Joining as {name}" */
-            <p
-              style={{
-                fontSize: "var(--type-body)",
-                lineHeight: "var(--leading-normal)",
-                color: "var(--text-secondary)",
-              }}
-            >
+            <p style={{ fontSize: "var(--type-body)", color: "var(--text-secondary)" }}>
               Joining as{" "}
-              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                {currentName}
-              </span>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentName}</span>
             </p>
           )}
 
@@ -128,15 +140,16 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
             disabled={isPending}
             style={{
               width: "100%",
-              padding: "0.75rem 1.5rem",
+              padding: "0.875rem 1.5rem",
               backgroundColor: isPending ? "var(--color-teal-hover)" : "var(--color-teal)",
               color: "#0a0a0a",
               fontSize: "var(--type-body)",
-              fontWeight: 600,
+              fontWeight: 700,
               border: "none",
-              borderRadius: "0.5rem",
+              borderRadius: "0.625rem",
               cursor: isPending ? "not-allowed" : "pointer",
-              marginTop: "0.5rem",
+              transition: "background-color 0.15s ease",
+              letterSpacing: "0.01em",
             }}
           >
             {isPending ? "Joining…" : `Join ${groupName}`}

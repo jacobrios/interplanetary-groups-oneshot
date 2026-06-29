@@ -1,58 +1,97 @@
 // src/app/groups/[id]/info/page.tsx
 //
-// Group info stub — the minimal bridge page that keeps the invite link
-// reachable after /groups/[id] became the real home screen.
+// Group info page — mockup frame 10.
+// Shows group identity, member list, activity rhythm, and the invite link (founder).
+// "A NOTE FROM ORBIT" reference note (not a bubble — no next action expected here).
 //
-// This stub is deliberately minimal: it carries only the invite-link UI
-// (founder-gated, as before) and routes to it via the header chevron.
-// The full group-info design (group emblem, member list, founder powers,
-// leave button) is a deferred slice; this page grows in place rather than
-// being replaced.  See §11 group-home-chat slice entry.
-//
-// Whether members (not just founders) should be able to surface the invite
-// link here is a group-info-slice product decision; the founder-only gate
-// is preserved from the prior stub intentionally.
+// Founder-only: invite link. All members: full member list and group rhythm.
 
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/current-user"
+import { parseRhythm } from "@/lib/orbit/rhythm"
 import CopyInviteLink from "../CopyInviteLink"
+import RosterAvatar from "@/app/events/[id]/RosterAvatar"
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+function formatRhythmSummary(activities: unknown): string | null {
+  const rhythm = parseRhythm(activities)
+  if (!rhythm) return null
+
+  const days = rhythm.daysOfWeek.map((d) => DAY_NAMES[d]).join(" & ")
+  const [h, m] = rhythm.timeLocal.split(":").map(Number)
+  const ampm = h < 12 ? "am" : "pm"
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  const timeStr = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, "0")}${ampm}`
+
+  // Approximate part of day
+  const partOfDay = h < 12 ? "mornings" : h < 17 ? "afternoons" : "evenings"
+
+  return `${days} ${partOfDay} @ ${timeStr}`
+}
+
 export default async function GroupInfoPage({ params }: Props) {
   const { id } = await params
 
-  const group = await prisma.group.findUnique({ where: { id } })
+  const group = await prisma.group.findUnique({
+    where: { id },
+    include: {
+      memberships: {
+        include: { user: true },
+        orderBy: { joinedAt: "asc" },
+      },
+    },
+  })
   if (!group) notFound()
 
   const viewer = await getCurrentUser()
   const isFounder = viewer?.id === group.founderId
+
+  const rhythmSummary = formatRhythmSummary(group.recurringActivities)
+  const rhythm = parseRhythm(group.recurringActivities)
+
+  // Group emblem: initials from group name
+  const initials = group.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("")
 
   return (
     <main
       style={{
         minHeight: "100dvh",
         backgroundColor: "var(--surface-page)",
+        background: "radial-gradient(ellipse at 50% 0%, rgba(163,230,53,0.03) 0%, transparent 50%), var(--surface-page)",
         color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--font-geist-sans, system-ui, sans-serif)",
       }}
     >
-      {/* Back header */}
+      {/* Header */}
       <header
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
           display: "flex",
           alignItems: "center",
           padding: "0.875rem 1rem",
           borderBottom: "1px solid var(--border-subtle)",
           flexShrink: 0,
+          backgroundColor: "rgba(10,10,10,0.85)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        <a
+        <Link
           href={`/groups/${group.id}`}
           style={{
             display: "flex",
@@ -60,115 +99,252 @@ export default async function GroupInfoPage({ params }: Props) {
             gap: "0.375rem",
             textDecoration: "none",
             color: "var(--text-secondary)",
-            fontSize: "var(--type-body)",
+            fontSize: "var(--type-meta)",
           }}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M9 11l-4-4 4-4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Back
-        </a>
+        </Link>
         <span
           style={{
             flex: 1,
             textAlign: "center",
             fontSize: "var(--type-body)",
             fontWeight: 600,
-            color: "var(--text-primary)",
           }}
         >
-          {group.name}
+          Group info
         </span>
-        {/* Spacer to visually balance the back link */}
         <div style={{ width: 40 }} aria-hidden="true" />
       </header>
 
       <div
         style={{
-          padding: "1.5rem 1rem",
+          padding: "1.5rem 1rem 3rem",
           width: "100%",
           maxWidth: "28rem",
           margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
         }}
       >
-        {/* Invite link — founder only (same gate as the prior stub) */}
-        {isFounder && (
+        {/* ── Group identity ─────────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "0.5rem" }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "0.875rem",
+              background: "linear-gradient(135deg, var(--color-lime) 0%, #86d24a 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              color: "#0a0a0a",
+              flexShrink: 0,
+              boxShadow: "0 4px 16px rgba(163,230,53,0.2)",
+            }}
+          >
+            {initials}
+          </div>
           <div>
-            <p
+            <h1
               style={{
-                fontSize: "var(--type-eyebrow)",
-                lineHeight: "var(--leading-normal)",
-                color: "var(--text-secondary)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: "0.75rem",
+                fontSize: "var(--type-title)",
+                fontWeight: 700,
+                lineHeight: "var(--leading-tight)",
+                marginBottom: "0.125rem",
+                letterSpacing: "-0.02em",
               }}
             >
-              Invite link
+              {group.name}
+            </h1>
+            <p style={{ fontSize: "var(--type-meta)", color: "var(--text-secondary)" }}>
+              {group.memberships.length} member{group.memberships.length !== 1 ? "s" : ""}
             </p>
+          </div>
+        </div>
 
-            <div
-              style={{
-                backgroundColor: "var(--surface-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "0.75rem",
-                padding: "1.25rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "var(--type-body)",
-                  color: "var(--text-primary)",
-                  wordBreak: "break-all",
-                }}
-              >
-                {/* Path only — CopyInviteLink builds the full URL client-side */}
-                /join/{group.inviteToken}
-              </p>
-
-              <CopyInviteLink inviteToken={group.inviteToken} />
-            </div>
-
+        {/* ── Invite link (founder only) ─────────────────────────── */}
+        {isFounder && (
+          <InfoCard>
+            <SectionLabel>Group invite link</SectionLabel>
             <p
               style={{
                 fontSize: "var(--type-meta)",
                 color: "var(--text-secondary)",
-                marginTop: "1.25rem",
+                wordBreak: "break-all",
+                fontFamily: "monospace",
+                backgroundColor: "var(--surface-input)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "0.375rem",
+                padding: "0.5rem 0.625rem",
+                marginBottom: "0.875rem",
               }}
             >
-              Share this link with the people you want to invite. Anyone with the
-              link can join.
+              /join/{group.inviteToken}
             </p>
-          </div>
+            <CopyInviteLink inviteToken={group.inviteToken} />
+            <p style={{ fontSize: "var(--type-meta)", color: "var(--text-secondary)", marginTop: "0.75rem" }}>
+              Anyone with the link can join. No approval needed.
+            </p>
+          </InfoCard>
         )}
 
-        {!isFounder && (
+        {/* ── Member list ──────────────────────────────────────────── */}
+        <InfoCard>
+          <SectionLabel>Who</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+            {group.memberships.map((m) => (
+              <div key={m.user.id} style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                <RosterAvatar name={m.user.name} size={28} />
+                <span style={{ fontSize: "var(--type-body)", color: "var(--text-primary)" }}>
+                  {m.user.name}
+                </span>
+                {m.user.id === group.founderId && (
+                  <span
+                    style={{
+                      fontSize: "var(--type-eyebrow)",
+                      color: "var(--text-placeholder)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    founder
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </InfoCard>
+
+        {/* ── Activity rhythm ───────────────────────────────────────── */}
+        {rhythm && rhythmSummary && (
+          <InfoCard>
+            <SectionLabel>{rhythm.activity.toUpperCase()}</SectionLabel>
+            <p style={{ fontSize: "var(--type-body)", color: "var(--text-primary)" }}>
+              {rhythmSummary}
+            </p>
+          </InfoCard>
+        )}
+
+        {/* ── Orbit reference note ─────────────────────────────────── */}
+        <div
+          style={{
+            backgroundColor: "rgba(163,230,53,0.05)",
+            border: "1px solid rgba(163,230,53,0.12)",
+            borderRadius: "0.75rem",
+            padding: "1rem",
+          }}
+        >
           <p
             style={{
-              fontSize: "var(--type-body)",
+              fontSize: "var(--type-eyebrow)",
+              color: "var(--color-lime)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: "0.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+            }}
+          >
+            <span
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                backgroundColor: "var(--color-lime)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.5rem",
+                fontWeight: 700,
+                color: "#0a0a0a",
+                flexShrink: 0,
+              }}
+            >
+              O
+            </span>
+            A note from Orbit
+          </p>
+          <p
+            style={{
+              fontSize: "var(--type-meta)",
               lineHeight: "var(--leading-normal)",
               color: "var(--text-secondary)",
             }}
           >
-            Group info coming soon.
+            Want to change something? Just tell me in the chat. No admin settings needed.
           </p>
+        </div>
+
+        {/* ── Leave group (placeholder, non-destructive) ───────────── */}
+        {viewer && !isFounder && (
+          <button
+            style={{
+              width: "100%",
+              padding: "0.75rem 1rem",
+              backgroundColor: "transparent",
+              color: "var(--text-secondary)",
+              fontSize: "var(--type-body)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "0.625rem",
+              cursor: "pointer",
+              marginTop: "0.5rem",
+              transition: "border-color 0.15s ease, color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#ef4444"
+              e.currentTarget.style.color = "#ef4444"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-subtle)"
+              e.currentTarget.style.color = "var(--text-secondary)"
+            }}
+          >
+            Leave group
+          </button>
         )}
       </div>
     </main>
+  )
+}
+
+// ─── Small sub-components ─────────────────────────────────────────────────────
+
+function InfoCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        backgroundColor: "var(--surface-card)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "0.875rem",
+        padding: "1.125rem 1.25rem",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontSize: "var(--type-eyebrow)",
+        color: "var(--text-secondary)",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        marginBottom: "0.75rem",
+      }}
+    >
+      {children}
+    </p>
   )
 }

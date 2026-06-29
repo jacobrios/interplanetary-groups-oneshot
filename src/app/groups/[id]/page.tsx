@@ -11,13 +11,11 @@
 // Data: single server render before any JS runs.  The event, roster counts,
 // and message feed all arrive together from one query pass.
 //
-// Deliberately deferred per §11:
-// - Condensed card after RSVP (build-notes §7 open question — ship full card)
-// - Membership gating (consistent with prior ungated surfaces)
-// - Multi-card carousel (single fixture event; carousel chrome waits for ≥2)
-// - Email-capture ask after first RSVP (rides with Orbit's live posting)
+// Gauge data: messages with gaugeId have their gauge state fetched and
+// attached, so the chat feed can render interest-gauge chips inline.
 
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/current-user"
 import { findSoonestUpcomingEvent } from "@/lib/events/upcoming"
@@ -45,7 +43,6 @@ export default async function GroupPage({ params }: Props) {
   const viewer = await getCurrentUser()
 
   // ── Soonest upcoming event + roster ──────────────────────────────────────
-  // Single event card; multi-card carousel waits for ≥2 events (§11).
   const upcomingEvent = await findSoonestUpcomingEvent(group.id)
 
   let inCount = 0
@@ -67,21 +64,55 @@ export default async function GroupPage({ params }: Props) {
     viewerEventStatus = viewerStatus
   }
 
-  // ── Message feed ──────────────────────────────────────────────────────────
+  // ── Message feed with gauge data ──────────────────────────────────────────
   const rawMessages = await prisma.message.findMany({
     where: { groupId: group.id },
     orderBy: { createdAt: "asc" },
     include: { author: true },
   })
 
-  const messages: FeedMessage[] = rawMessages.map((msg) => ({
-    id: msg.id,
-    authorType: msg.authorType,
-    authorId: msg.authorId,
-    authorName: msg.author?.name ?? null,
-    body: msg.body,
-    createdAt: msg.createdAt,
-  }))
+  // Fetch gauge states for any gauge messages
+  const gaugeIds = rawMessages
+    .map((m) => m.gaugeId)
+    .filter((id): id is string => id !== null)
+
+  const gauges = gaugeIds.length > 0
+    ? await prisma.gauge.findMany({
+        where: { id: { in: gaugeIds } },
+        include: { votes: true },
+      })
+    : []
+
+  const gaugeMap = new Map(gauges.map((g) => [g.id, g]))
+
+  const messages: FeedMessage[] = rawMessages.map((msg) => {
+    const gauge = msg.gaugeId ? gaugeMap.get(msg.gaugeId) : null
+    const viewerVote = gauge && viewer
+      ? (gauge.votes.find((v) => v.userId === viewer.id)?.response ?? null)
+      : null
+    const inCount = gauge ? gauge.votes.filter((v) => v.response === "IN").length : 0
+    const maybeCount = gauge ? gauge.votes.filter((v) => v.response === "MAYBE").length : 0
+
+    return {
+      id: msg.id,
+      authorType: msg.authorType,
+      authorId: msg.authorId,
+      authorName: msg.author?.name ?? null,
+      body: msg.body,
+      createdAt: msg.createdAt,
+      gauge: gauge
+        ? {
+            id: gauge.id,
+            body: gauge.body,
+            inCount,
+            maybeCount,
+            viewerVote,
+            closedAt: gauge.closedAt,
+            eventId: gauge.eventId,
+          }
+        : null,
+    }
+  })
 
   return (
     <div
@@ -89,6 +120,7 @@ export default async function GroupPage({ params }: Props) {
         height: "100dvh",
         overflow: "hidden",
         backgroundColor: "var(--surface-page)",
+        background: "radial-gradient(ellipse at 50% 0%, rgba(163,230,53,0.03) 0%, transparent 50%), var(--surface-page)",
         color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
@@ -96,10 +128,6 @@ export default async function GroupPage({ params }: Props) {
       }}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      {/* Grammar per §7: Orbit logo top-left (home button); group title +
-          chevron opens group info (which carries the invite link).
-          Multi-group navigation is a fast-follow (§8); the logo is
-          presentational this slice. */}
       <header
         style={{
           display: "flex",
@@ -108,9 +136,12 @@ export default async function GroupPage({ params }: Props) {
           padding: "0.875rem 1rem",
           borderBottom: "1px solid var(--border-subtle)",
           flexShrink: 0,
+          backgroundColor: "rgba(10,10,10,0.8)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        {/* Orbit logo — home button (multi-group fast-follow; presentational now) */}
+        {/* Orbit logo — home button */}
         <div
           aria-label="Orbit"
           style={{
@@ -125,13 +156,14 @@ export default async function GroupPage({ params }: Props) {
             fontWeight: 700,
             color: "#0a0a0a",
             letterSpacing: "-0.01em",
+            boxShadow: "0 0 8px rgba(163,230,53,0.25)",
           }}
         >
           O
         </div>
 
         {/* Group title + chevron → group info */}
-        <a
+        <Link
           href={`/groups/${group.id}/info`}
           style={{
             display: "flex",
@@ -150,7 +182,6 @@ export default async function GroupPage({ params }: Props) {
           >
             {group.name}
           </span>
-          {/* Chevron — design token per §7 header grammar */}
           <svg
             width="14"
             height="14"
@@ -167,9 +198,8 @@ export default async function GroupPage({ params }: Props) {
               strokeLinejoin="round"
             />
           </svg>
-        </a>
+        </Link>
 
-        {/* Right-side spacer to visually balance the logo */}
         <div style={{ width: 28 }} aria-hidden="true" />
       </header>
 
@@ -177,7 +207,7 @@ export default async function GroupPage({ params }: Props) {
       <div style={{ padding: "0.75rem 1rem 0", flexShrink: 0 }}>
         {upcomingEvent ? (
           <EventCard
-            event={upcomingEvent}
+            event={{ ...upcomingEvent, timeZone: group.timeZone }}
             groupId={group.id}
             inCount={inCount}
             outCount={outCount}
@@ -186,7 +216,6 @@ export default async function GroupPage({ params }: Props) {
             viewerHasSession={viewer !== null}
           />
         ) : (
-          /* No upcoming event — quiet empty state; the feed still renders */
           <div
             style={{
               backgroundColor: "var(--surface-card)",
@@ -208,10 +237,7 @@ export default async function GroupPage({ params }: Props) {
         )}
       </div>
 
-      {/* ── Chat feed + pinned input (client island) ───────────────────── */}
-      {/* The chat section fills remaining viewport height.  The feed is its
-          own scroll region; the input is pinned at the bottom.
-          Body stays at --type-body (17px), never shrunk (§7 firm rule). */}
+      {/* ── Chat feed + pinned input ───────────────────────────────────── */}
       <div
         style={{
           flex: 1,

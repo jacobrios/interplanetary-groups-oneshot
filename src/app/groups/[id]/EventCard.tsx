@@ -1,21 +1,8 @@
 // src/app/groups/[id]/EventCard.tsx
 //
 // The pinned compact event card at the top of the group home.
-//
-// Design rules (build-notes §7):
-// - Shows the gist: title, day/time (3-letter weekday), short venue label,
-//   and counts-only status ("4 In · 1 Out · 4 TBD"; In always shown, Out
-//   only when nonzero, TBD = pending, no names).
-// - The card body is a link to the event detail page.
-// - RSVP controls reuse the existing RsvpControls (compact=true) and
-//   setRsvp write — identical logic, smaller shell.
-// - Teal "I'm in" is the single persistent primary action on this screen;
-//   "Can't make it" is outlined secondary.
-// - The card stays pinned at the top; condensed-after-RSVP is deliberately
-//   not built (see build-notes §7 open question and §11).
-//
-// Tech debt: RsvpControls lives under events/[id]/ but is shared here;
-// noted for future relocation to a shared dir.
+// Design rules (build-notes §7): counts-only status, 3-letter weekday,
+// teal "I'm in" as the single primary action, outlined secondary.
 
 import Link from "next/link"
 import RsvpControls from "@/app/events/[id]/RsvpControls"
@@ -29,6 +16,7 @@ interface Props {
     title: string
     startsAt: Date
     endsAt: Date | null
+    timeZone: string
     venues: { displayLabel: string | null; name: string }[]
   }
   groupId: string
@@ -50,7 +38,7 @@ export default function EventCard({
 }: Props) {
   const venue = event.venues[0] ?? null
   const venueLabel = venue ? (venue.displayLabel ?? venue.name) : null
-  const dateLabel = formatEventDate(event.startsAt, event.endsAt)
+  const dateLabel = formatEventDate(event.startsAt, event.endsAt, event.timeZone)
   const countsLabel = formatCounts({ inCount, outCount, pendingCount })
 
   return (
@@ -58,17 +46,19 @@ export default function EventCard({
       style={{
         backgroundColor: "var(--surface-card)",
         border: "1px solid var(--border-subtle)",
-        borderRadius: "0.75rem",
+        borderRadius: "0.875rem",
         overflow: "hidden",
         flexShrink: 0,
+        boxShadow: "var(--shadow-card)",
+        transition: "border-color 0.15s ease",
       }}
     >
-      {/* Card body — tappable link to the event detail page */}
+      {/* Card body — tappable link to event detail */}
       <Link
         href={`/events/${event.id}`}
         style={{
           display: "block",
-          padding: "1rem 1rem 0.75rem",
+          padding: "0.875rem 1rem 0.75rem",
           textDecoration: "none",
           color: "inherit",
         }}
@@ -80,13 +70,13 @@ export default function EventCard({
             lineHeight: "var(--leading-tight)",
             fontWeight: 700,
             color: "var(--text-primary)",
-            marginBottom: "0.375rem",
+            marginBottom: "0.3rem",
           }}
         >
           {event.title}
         </p>
 
-        {/* Metadata row: date · venue · counts */}
+        {/* Metadata row */}
         <p
           style={{
             fontSize: "var(--type-meta)",
@@ -95,17 +85,21 @@ export default function EventCard({
           }}
         >
           {dateLabel}
-          {venueLabel && <span> · {venueLabel}</span>}
-          <span> · {countsLabel}</span>
+          {venueLabel && <span style={{ color: "var(--border-medium)" }}> · </span>}
+          {venueLabel && venueLabel}
+          <span style={{ color: "var(--border-medium)" }}> · </span>
+          <span style={{ color: inCount > 0 ? "var(--color-teal)" : "var(--text-secondary)" }}>
+            {countsLabel}
+          </span>
         </p>
       </Link>
 
-      {/* RSVP controls — only for authenticated viewers */}
+      {/* RSVP controls */}
       {viewerHasSession && (
         <div
           style={{
             borderTop: "1px solid var(--border-subtle)",
-            padding: "0.75rem 1rem",
+            padding: "0.625rem 1rem",
           }}
         >
           <RsvpControls

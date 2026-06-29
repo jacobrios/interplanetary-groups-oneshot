@@ -6,6 +6,10 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/auth/current-user"
 import { createMessage } from "@/lib/messages/create"
 import { MessageAuthor } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
+import { looksLikeSpark, hasOpenGauge, createGauge } from "@/lib/orbit/spark"
+import { detectSpark } from "@/lib/orbit/extract"
+import { parseRhythm } from "@/lib/orbit/rhythm"
 
 export interface SendMessageState {
   errors?: {
@@ -16,14 +20,14 @@ export interface SendMessageState {
 /**
  * Server action: post a member message to a group's feed.
  *
- * Auth model matches the other actions:
- * - Re-verifies the session via supabase.auth.getUser() — never trusts the client.
- * - Re-resolves the User row via getCurrentUser() so the authorId is always
- *   a real Prisma User id, never a client-passed value.
- * - Does NOT mint an anonymous session (no membership → no right to post).
+ * Auth model: re-verifies session via Supabase getUser(), resolves the User
+ * row server-side — never trusts client-passed values.
  *
- * On success, revalidatePath refreshes the group home so the feed reflects
- * the new message on the next server render.
+ * Spark detection (build-notes §5): after writing the member's message,
+ * runs a keyword pre-filter. If positive, calls Anthropic to confirm intent.
+ * If a spark is detected and no open gauge exists, creates an interest gauge.
+ * The Anthropic call adds ~1-2s to the action; the optimistic message is
+ * already visible to the sender, so the latency only delays Orbit's response.
  */
 export async function sendMessageAction(
   _prevState: SendMessageState,
@@ -40,7 +44,6 @@ export async function sendMessageAction(
     return { errors: { general: "Message cannot be empty." } }
   }
 
-  // Re-verify session server-side — never trust a client-passed user id.
   const supabase = await createClient()
   const {
     data: { user: supabaseUser },
@@ -55,6 +58,7 @@ export async function sendMessageAction(
     return { errors: { general: "You need to be signed in to send messages." } }
   }
 
+  // Write the member's message
   try {
     await createMessage({
       groupId,
@@ -70,9 +74,39 @@ export async function sendMessageAction(
     return { errors: { general: "Couldn't send that, try again." } }
   }
 
-  // CRITICAL: revalidatePath must be called outside and after try/catch.
-  // In Next.js it uses a similar internal throw mechanism to redirect() and
-  // would be swallowed if placed inside the catch block.
+  // ── Spark detection ──────────────────────────────────────────────────────
+  // Quick keyword pre-filter before the Anthropic call.
+  if (looksLikeSpark(body)) {
+    try {
+      // Check if there's already an open gauge — skip if so.
+      const alreadyGauging = await hasOpenGauge(groupId)
+      if (!alreadyGauging) {
+        // Fetch the group's activity context for better detection
+        const group = await prisma.group.findUnique({
+          where: { id: groupId },
+          select: { recurringActivities: true },
+        })
+        const rhythm = group ? parseRhythm(group.recurringActivities) : null
+        const groupActivity = rhythm?.activity ?? "hang out"
+
+        const spark = await detectSpark(body, groupActivity)
+
+        if (spark.isSpark && spark.confidence > 0.6) {
+          await createGauge({
+            groupId,
+            initiatorId: user.id,
+            initiatorName: user.name,
+            activity: spark.activity ?? groupActivity,
+          })
+        }
+      }
+    } catch (err) {
+      // Spark detection failure is non-fatal — member's message was already saved.
+      console.error("[spark detection] error:", err)
+    }
+  }
+  // ── End spark detection ──────────────────────────────────────────────────
+
   revalidatePath(`/groups/${groupId}`)
   return {}
 }

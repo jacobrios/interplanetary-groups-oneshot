@@ -6,6 +6,8 @@ interface ProvisionInput {
   supabaseAuthId: string
   founderName: string
   groupName: string
+  timeZone?: string
+  recurringActivities?: unknown
 }
 
 interface ProvisionResult {
@@ -22,16 +24,18 @@ interface ProvisionResult {
  *
  * The founder is automatically added as a member (Membership record) because
  * the roster is built from memberships — the founder is also a member.
+ *
+ * timeZone and recurringActivities are populated from the onboarding extraction.
+ * Both have safe defaults (UTC, null) so the original simple flow still works.
  */
 export async function provisionFounderGroup({
   supabaseAuthId,
   founderName,
   groupName,
+  timeZone = "UTC",
+  recurringActivities = null,
 }: ProvisionInput): Promise<ProvisionResult> {
   return prisma.$transaction(async (tx) => {
-    // Reuse the existing User if one already exists for this Supabase auth ID.
-    // This is the data-layer guard against duplicate User rows when a session
-    // is already present (the auth-layer guard lives in the server action).
     let user = await tx.user.findUnique({ where: { supabaseAuthId } })
 
     if (!user) {
@@ -44,6 +48,8 @@ export async function provisionFounderGroup({
       data: {
         name: groupName,
         founderId: user.id,
+        timeZone,
+        recurringActivities: recurringActivities ?? undefined,
         memberships: { create: { userId: user.id } },
       },
     })

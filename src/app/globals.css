@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #f4f4f5;
+  --background: #15161e;
+  --foreground: #ECEDF2;
 
   /* ─── Color: teal (primary action) and lime (Orbit brand) ─────── */
-  --color-teal: #2dd4bf;
-  --color-teal-hover: #14b8a6;
-  --color-teal-dim: rgba(45,212,191,0.12);
-  --color-lime: #a3e635;
-  --color-lime-dim: rgba(163,230,53,0.12);
+  --color-teal:       #18bccb;  /* exact design action token */
+  --color-teal-hover: #13a8b6;
+  --color-teal-dim:   rgba(24,188,203,0.12);
+  --action-ink:       #0a2125;  /* ink on teal buttons */
+  --color-lime:       #a4ef4e;  /* exact design lime token */
+  --lime-ink:         #233006;  /* ink on lime fills */
+  --color-lime-dim:   rgba(164,239,78,0.12);
 
   /* ─── Type scale ─────────────────────────────────────────────────
      Sizes in rem (honor device text setting); unitless line-heights.
@@ -26,29 +28,29 @@
   --leading-tight:  1.15;
   --leading-normal: 1.5;
 
-  /* ─── Surfaces (dark-first) ──────────────────────────────────── */
-  --surface-page:       #0a0a0a;
-  --surface-card:       #111111;
-  --surface-card-hover: #161616;
-  --surface-input:      #181818;
-  --surface-elevated:   #1c1c1c;
+  /* ─── Surfaces (dark-first, navy palette per design tokens) ─────── */
+  --surface-page:       #15161e;  /* design --surface-base  */
+  --surface-card:       #20222d;  /* design --surface-raised */
+  --surface-card-hover: #262b37;
+  --surface-input:      #20222d;  /* same as card */
+  --surface-elevated:   #262b37;
 
   /* ─── Borders ─────────────────────────────────────────────────── */
-  --border-subtle:  #222222;
-  --border-medium:  #2e2e2e;
+  --border-subtle:  #363a49;  /* design --hairline / --stroke */
+  --border-medium:  #454c5e;  /* design --border */
 
   /* ─── Text ────────────────────────────────────────────────────── */
-  --text-primary:     #f4f4f5;
-  --text-secondary:   #a1a1aa;
-  --text-placeholder: #52525b;
+  --text-primary:     #ECEDF2;  /* design --text-primary / --ink */
+  --text-secondary:   #A7AAB6;  /* design --text-secondary / --ink-soft */
+  --text-placeholder: #6F7280;  /* design --text-faint / --ink-faint */
 
   /* ─── Chat voice system (build-notes §7) ─────────────────────── */
-  --surface-orbit:         #141f15;   /* muted green-dark for Orbit bubbles */
-  --surface-bubble-member: #161616;   /* low-fill member bubble background  */
-  --surface-self:          #1e1e1e;   /* viewer's own messages — strongest neutral */
+  --surface-orbit:         #20222d;  /* Orbit bubbles = raised surface (design) */
+  --surface-bubble-member: #20222d;  /* member bubbles = same raised surface */
+  --surface-self:          #2d3040;  /* viewer's own — design --surface-self */
 
   /* ─── Elevation / shadow ─────────────────────────────────────── */
-  --shadow-card:  0 2px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.35);
   --shadow-float: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
 }
 

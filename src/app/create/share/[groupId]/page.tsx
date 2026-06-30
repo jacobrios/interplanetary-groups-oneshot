@@ -2,19 +2,17 @@
 //
 // Onboarding Step 3 — Share the invite link.
 //
-// This page is the natural landing after a new group is created in Step 2.
-// It shows the group name, a copyable invite link, and a "Take me to my group"
-// teal CTA.
+// Design: header shows Orbit + STEP 3 OF 3 (matching Steps 1 and 2).
+// The share card appears first (group name + invite link + teal share button),
+// then Orbit's bubble below it, then the "Take me to my group" outlined button.
 //
-// Design rule (§7): the invite link is the primary action here — teal.
-// The "Take me to my group" button is secondary (outlined).
-// This page is ungated — the founder must have just come from /create, so
-// their session exists, but we don't verify membership here.
+// Orbit bubble copy must not contain em-dashes or en-dashes (CLAUDE.md rule).
 
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import CopyInviteLink from "@/app/groups/[id]/CopyInviteLink"
-import Link from "next/link"
+import OrbitAvatar from "@/components/OrbitAvatar"
 
 interface Props {
   params: Promise<{ groupId: string }>
@@ -29,11 +27,6 @@ export default async function CreateSharePage({ params }: Props) {
   })
 
   if (!group) notFound()
-
-  const inviteUrl =
-    typeof window === "undefined"
-      ? `/join/${group.inviteToken}` // relative for SSR (host unknown)
-      : `${window.location.origin}/join/${group.inviteToken}`
 
   return (
     <main
@@ -52,55 +45,61 @@ export default async function CreateSharePage({ params }: Props) {
     >
       <div style={{ width: "100%", maxWidth: "26rem" }}>
 
-        {/* Header mark */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "2rem" }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "var(--color-lime)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              color: "#0a0a0a",
-              flexShrink: 0,
-              boxShadow: "0 0 12px rgba(163,230,53,0.3)",
-            }}
-          >
-            O
-          </div>
-          <span
-            style={{
-              fontSize: "var(--type-heading)",
-              fontWeight: 700,
-              background: "linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Interplanetary Groups
-          </span>
-        </div>
-
-        {/* Orbit bubble */}
+        {/* Header — Orbit + STEP 3 OF 3 (matches Steps 1 and 2) */}
         <div
           style={{
-            backgroundColor: "var(--surface-orbit)",
-            borderRadius: "4px 16px 16px 16px",
-            padding: "0.875rem 1rem",
-            border: "1px solid rgba(163,230,53,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
             marginBottom: "1.5rem",
           }}
         >
-          <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
-            <strong>{group.name}</strong> is ready! Share this link so your crew can join. I&rsquo;ll take it from there.
-          </p>
+          {/* Back to create */}
+          <Link
+            href="/create"
+            aria-label="Back to create"
+            style={{
+              color: "var(--text-secondary)",
+              display: "flex",
+              alignItems: "center",
+              marginRight: "0.125rem",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+
+          {/* Orbit avatar — 44px slot, mark at 156% */}
+          <OrbitAvatar size={44} />
+
+          {/* Orbit name + step counter */}
+          <div style={{ lineHeight: 1 }}>
+            <p
+              style={{
+                fontSize: "var(--type-body)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: 0,
+              }}
+            >
+              Orbit
+            </p>
+            <p
+              style={{
+                fontSize: "var(--type-eyebrow)",
+                color: "var(--text-secondary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                margin: "0.125rem 0 0",
+              }}
+            >
+              STEP 3 OF 3
+            </p>
+          </div>
         </div>
 
-        {/* Invite link card */}
+        {/* Share card — group name + invite link + teal share button */}
         <div
           style={{
             backgroundColor: "var(--surface-card)",
@@ -112,6 +111,19 @@ export default async function CreateSharePage({ params }: Props) {
           }}
         >
           <div style={{ padding: "1.25rem 1.25rem 1rem" }}>
+            {/* Group name */}
+            <p
+              style={{
+                fontSize: "var(--type-heading)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                marginBottom: "0.75rem",
+              }}
+            >
+              {group.name}
+            </p>
+
+            {/* Invite link label */}
             <p
               style={{
                 fontSize: "var(--type-eyebrow)",
@@ -123,43 +135,93 @@ export default async function CreateSharePage({ params }: Props) {
             >
               Group invite link
             </p>
-            <p
+
+            {/* URL display */}
+            <div
               style={{
-                fontSize: "var(--type-meta)",
-                color: "var(--text-secondary)",
-                wordBreak: "break-all",
-                fontFamily: "monospace",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
                 backgroundColor: "var(--surface-input)",
                 border: "1px solid var(--border-subtle)",
                 borderRadius: "0.375rem",
                 padding: "0.5rem 0.625rem",
               }}
             >
-              /join/{group.inviteToken}
-            </p>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" style={{ flexShrink: 0, color: "var(--text-secondary)" }}>
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.25" />
+                <ellipse cx="7" cy="7" rx="2.5" ry="5.5" stroke="currentColor" strokeWidth="1.25" />
+                <line x1="1.5" y1="7" x2="12.5" y2="7" stroke="currentColor" strokeWidth="1.25" />
+              </svg>
+              <p
+                style={{
+                  fontSize: "var(--type-meta)",
+                  color: "var(--text-secondary)",
+                  wordBreak: "break-all",
+                  fontFamily: "monospace",
+                  margin: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                /join/{group.inviteToken}
+              </p>
+            </div>
           </div>
 
-          {/* Teal footer — Copy to clipboard */}
+          {/* Teal footer — Share invite link */}
           <CopyInviteLink
             inviteToken={group.inviteToken}
             variant="footer"
           />
         </div>
 
-        {/* Tertiary text link — per mockup screen 04 */}
+        {/* Orbit bubble — no em-dashes per CLAUDE.md */}
+        <div
+          style={{
+            backgroundColor: "var(--surface-orbit)",
+            borderRadius: "4px 16px 16px 16px",
+            padding: "0.875rem 1rem",
+            border: "1px solid var(--border-subtle)",
+            marginBottom: "1rem",
+          }}
+        >
+          <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
+            Here&rsquo;s your invite link. Send it to anyone you want. They just tap to join, and you can share it again anytime from inside your group.
+          </p>
+        </div>
+
+        {/* "Take me to my group" — outlined button per mockup */}
         <Link
           href={`/groups/${group.id}`}
           style={{
             display: "block",
             textAlign: "center",
-            padding: "0.75rem",
-            color: "var(--text-secondary)",
+            padding: "0.75rem 1rem",
+            color: "var(--text-primary)",
             fontSize: "var(--type-body)",
+            fontWeight: 600,
             textDecoration: "none",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "0.625rem",
+            transition: "border-color 0.15s ease",
           }}
         >
-          Take me to my group
+          Take me to my group →
         </Link>
+
+        {/* Helper text */}
+        <p
+          style={{
+            fontSize: "var(--type-meta)",
+            color: "var(--text-secondary)",
+            textAlign: "center",
+            marginTop: "0.75rem",
+          }}
+        >
+          You can invite people now or anytime later
+        </p>
       </div>
     </main>
   )

@@ -3,16 +3,27 @@
 
 import { useActionState } from "react"
 import { joinGroupAction, type JoinGroupState } from "@/app/actions/join-group"
+import OrbitAvatar from "@/components/OrbitAvatar"
 
 interface Props {
   groupName: string
   inviteToken: string
   currentName: string | null
+  memberCount: number
+  activityLabel: string | null
+  scheduleString: string | null
 }
 
 const initialState: JoinGroupState = {}
 
-export default function JoinForm({ groupName, inviteToken, currentName }: Props) {
+export default function JoinForm({
+  groupName,
+  inviteToken,
+  currentName,
+  memberCount,
+  activityLabel,
+  scheduleString,
+}: Props) {
   const [state, formAction, isPending] = useActionState(joinGroupAction, initialState)
 
   return (
@@ -32,52 +43,76 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
     >
       <div style={{ width: "100%", maxWidth: "26rem" }}>
 
-        {/* Orbit avatar + group name */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2rem" }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              backgroundColor: "var(--color-lime)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.875rem",
-              fontWeight: 700,
-              color: "#0a0a0a",
-              flexShrink: 0,
-              boxShadow: "0 0 12px rgba(163,230,53,0.3)",
-            }}
-          >
-            O
-          </div>
-          <div>
-            <p style={{ fontSize: "var(--type-eyebrow)", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.125rem" }}>
-              You&rsquo;re invited to
-            </p>
-            <p style={{ fontSize: "var(--type-heading)", fontWeight: 700, color: "var(--text-primary)", lineHeight: "var(--leading-tight)" }}>
-              {groupName}
-            </p>
-          </div>
-        </div>
-
-        {/* Orbit bubble */}
-        <div
+        {/* "YOU'RE INVITED" eyebrow */}
+        <p
           style={{
-            backgroundColor: "var(--surface-orbit)",
-            borderRadius: "4px 16px 16px 16px",
-            padding: "0.875rem 1rem",
-            border: "1px solid rgba(163,230,53,0.1)",
-            marginBottom: "1.5rem",
+            fontSize: "var(--type-eyebrow)",
+            color: "var(--text-secondary)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginBottom: "1rem",
           }}
         >
-          <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
-            Hey! Keep {groupName} running so nobody has to be the organizer. No sign-up, no password. What should we call you?
-          </p>
+          You&rsquo;re invited
+        </p>
+
+        {/* Orbit message — avatar left, bubble right (design jn-msg) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: "0.5rem",
+            marginBottom: "1.25rem",
+          }}
+        >
+          <OrbitAvatar size={28} style={{ flexShrink: 0 }} />
+          <div
+            style={{
+              backgroundColor: "var(--surface-orbit)",
+              borderRadius: "4px 16px 16px 16px",
+              padding: "0.75rem 0.875rem",
+              border: "1px solid var(--border-subtle)",
+              flex: 1,
+            }}
+          >
+            <p style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", margin: 0 }}>
+              Hey! I&rsquo;m Orbit. I keep {groupName} running so nobody has to be the organizer.
+            </p>
+          </div>
         </div>
 
-        <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        {/* Group info card */}
+        <div
+          style={{
+            backgroundColor: "var(--surface-card)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "0.875rem",
+            padding: "1rem 1.25rem",
+            marginBottom: "1.25rem",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "var(--type-heading)",
+              fontWeight: 700,
+              lineHeight: "var(--leading-tight)",
+              color: "var(--text-primary)",
+              marginBottom: "0.75rem",
+            }}
+          >
+            {groupName}
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+            <InfoRow label="WHO" value={`${memberCount} member${memberCount !== 1 ? "s" : ""}`} />
+            {activityLabel && scheduleString && (
+              <InfoRow label={activityLabel.toUpperCase()} value={scheduleString} />
+            )}
+          </div>
+        </div>
+
+        <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <input type="hidden" name="inviteToken" value={inviteToken} />
           <input type="hidden" name="hasSession" value={currentName ? "1" : ""} />
 
@@ -88,50 +123,38 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
           )}
 
           {currentName === null ? (
-            <div>
-              <label
-                htmlFor="memberName"
-                style={{
-                  display: "block",
-                  fontSize: "var(--type-label)",
-                  color: "var(--text-secondary)",
-                  marginBottom: "0.375rem",
-                }}
-              >
-                Your name
-              </label>
-              <input
-                id="memberName"
-                name="memberName"
-                type="text"
-                autoFocus
-                autoComplete="given-name"
-                placeholder="e.g. Jordan"
-                style={{
-                  width: "100%",
-                  padding: "0.625rem 0.75rem",
-                  backgroundColor: "var(--surface-input)",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--type-body)",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  transition: "border-color 0.15s ease",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-teal)" }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-subtle)" }}
-              />
-              {state.errors?.memberName && (
-                <p style={{ fontSize: "var(--type-meta)", color: "#f87171", marginTop: "0.25rem" }}>
-                  {state.errors.memberName}
-                </p>
-              )}
-            </div>
+            <input
+              id="memberName"
+              name="memberName"
+              type="text"
+              autoFocus
+              autoComplete="given-name"
+              placeholder="What should the crew call you?"
+              style={{
+                width: "100%",
+                padding: "0.625rem 0.75rem",
+                backgroundColor: "var(--surface-input)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "0.5rem",
+                color: "var(--text-primary)",
+                fontSize: "var(--type-body)",
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-teal)" }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-subtle)" }}
+            />
           ) : (
             <p style={{ fontSize: "var(--type-body)", color: "var(--text-secondary)" }}>
               Joining as{" "}
               <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{currentName}</span>
+            </p>
+          )}
+
+          {state.errors?.memberName && (
+            <p style={{ fontSize: "var(--type-meta)", color: "#f87171", marginTop: "-0.5rem" }}>
+              {state.errors.memberName}
             </p>
           )}
 
@@ -142,20 +165,55 @@ export default function JoinForm({ groupName, inviteToken, currentName }: Props)
               width: "100%",
               padding: "0.875rem 1.5rem",
               backgroundColor: isPending ? "var(--color-teal-hover)" : "var(--color-teal)",
-              color: "#0a0a0a",
+              color: "var(--action-ink)",
               fontSize: "var(--type-body)",
-              fontWeight: 700,
+              fontWeight: 800,
               border: "none",
-              borderRadius: "0.625rem",
+              borderRadius: "999px",
               cursor: isPending ? "not-allowed" : "pointer",
               transition: "background-color 0.15s ease",
               letterSpacing: "0.01em",
+              minHeight: "3.2em",
             }}
           >
-            {isPending ? "Joining…" : `Join ${groupName}`}
+            {isPending ? "Joining…" : `Join ${groupName} →`}
           </button>
+
+          {/* Helper text */}
+          <p
+            style={{
+              fontSize: "var(--type-meta)",
+              color: "var(--text-secondary)",
+              textAlign: "center",
+              lineHeight: "var(--leading-normal)",
+            }}
+          >
+            No app to download, no password. You&rsquo;ll land right in the group.
+          </p>
         </form>
       </div>
     </main>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", gap: "0.875rem", alignItems: "baseline" }}>
+      <span
+        style={{
+          fontSize: "var(--type-eyebrow)",
+          color: "var(--text-secondary)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          flexShrink: 0,
+          width: "4.5rem",
+        }}
+      >
+        {label}
+      </span>
+      <span style={{ fontSize: "var(--type-body)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)" }}>
+        {value}
+      </span>
+    </div>
   )
 }

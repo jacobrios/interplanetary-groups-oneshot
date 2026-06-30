@@ -22,6 +22,7 @@ import { findSoonestUpcomingEvent } from "@/lib/events/upcoming"
 import { deriveRoster } from "@/lib/events/roster"
 import EventCard from "./EventCard"
 import GroupHome from "./GroupHome"
+import OrbitAvatar from "@/components/OrbitAvatar"
 import type { FeedMessage } from "./MessageFeed"
 
 interface Props {
@@ -136,68 +137,62 @@ export default async function GroupPage({ params }: Props) {
           padding: "0.875rem 1rem",
           borderBottom: "1px solid var(--border-subtle)",
           flexShrink: 0,
-          backgroundColor: "rgba(10,10,10,0.8)",
+          backgroundColor: "rgba(21,22,30,0.9)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        {/* Orbit logo — home button */}
-        <div
-          aria-label="Orbit"
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            backgroundColor: "var(--color-lime)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "0.6875rem",
-            fontWeight: 700,
-            color: "#0a0a0a",
-            letterSpacing: "-0.01em",
-            boxShadow: "0 0 8px rgba(163,230,53,0.25)",
-          }}
-        >
-          O
-        </div>
+        {/* Orbit logo — home button, 38px slot per design gh-homebtn */}
+        <OrbitAvatar size={38} />
 
-        {/* Group title + chevron → group info */}
+        {/* Group title + chevron → group info, with member count subtitle */}
         <Link
           href={`/groups/${group.id}/info`}
           style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: "0.25rem",
+            gap: "0.125rem",
             textDecoration: "none",
             color: "var(--text-primary)",
           }}
         >
+          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+            <span
+              style={{
+                fontSize: "var(--type-body)",
+                fontWeight: 600,
+                lineHeight: "var(--leading-tight)",
+              }}
+            >
+              {group.name}
+            </span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              <path
+                d="M5 3l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
           <span
             style={{
-              fontSize: "var(--type-body)",
-              fontWeight: 600,
-              lineHeight: "var(--leading-tight)",
+              fontSize: "var(--type-eyebrow)",
+              color: "var(--text-secondary)",
+              lineHeight: 1,
             }}
           >
-            {group.name}
+            {`${group.memberships.length} member${group.memberships.length !== 1 ? "s" : ""} · group info & invite link`}
           </span>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            <path
-              d="M5 3l4 4-4 4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
         </Link>
 
         <div style={{ width: 28 }} aria-hidden="true" />

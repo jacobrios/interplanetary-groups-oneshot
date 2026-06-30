@@ -47,14 +47,17 @@ export async function sendMessageAction(
   const supabase = await createClient()
   const {
     data: { user: supabaseUser },
+    error: authError,
   } = await supabase.auth.getUser()
 
   if (!supabaseUser) {
+    console.error("[send-message] no supabase user — authError:", authError?.message ?? "none")
     return { errors: { general: "You need to be signed in to send messages." } }
   }
 
   const user = await getCurrentUser()
   if (!user) {
+    console.error("[send-message] supabase user found but no prisma user for supabaseAuthId:", supabaseUser.id)
     return { errors: { general: "You need to be signed in to send messages." } }
   }
 
@@ -68,6 +71,7 @@ export async function sendMessageAction(
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : ""
+    console.error("[send-message] createMessage failed:", msg, err)
     if (msg === "EMPTY_BODY") {
       return { errors: { general: "Message cannot be empty." } }
     }

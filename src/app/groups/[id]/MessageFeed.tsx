@@ -15,6 +15,7 @@
 import { MessageAuthor, GaugeResponse } from "@prisma/client"
 import { useRef, useEffect, useTransition } from "react"
 import { gaugeVoteAction } from "@/app/actions/gauge-vote"
+import OrbitAvatar from "@/components/OrbitAvatar"
 
 export interface GaugeData {
   id: string
@@ -104,13 +105,13 @@ export default function MessageFeed({ messages, viewerId }: Props) {
             {isOrbit && (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "85%" }}>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem" }}>
-                  <OrbitAvatar />
+                  <OrbitAvatar size={28} />
                   <div
                     style={{
                       backgroundColor: "var(--surface-orbit)",
                       borderRadius: "4px 16px 16px 16px",
                       padding: "0.5rem 0.75rem",
-                      border: "1px solid rgba(163,230,53,0.08)",
+                      border: "1px solid var(--border-subtle)",
                     }}
                   >
                     <p
@@ -204,31 +205,8 @@ export default function MessageFeed({ messages, viewerId }: Props) {
   )
 }
 
-// ─── Orbit avatar ─────────────────────────────────────────────────────────────
-
-function OrbitAvatar() {
-  return (
-    <div
-      aria-label="Orbit"
-      style={{
-        width: 28,
-        height: 28,
-        borderRadius: "50%",
-        backgroundColor: "var(--color-lime)",
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.6875rem",
-        fontWeight: 700,
-        color: "#0a0a0a",
-        boxShadow: "0 0 6px rgba(163,230,53,0.2)",
-      }}
-    >
-      O
-    </div>
-  )
-}
+// OrbitAvatar imported from @/components/OrbitAvatar — replaces the former
+// local lime circle placeholder. 28px slot, mark renders at 156% (overflows).
 
 // ─── Interest gauge chips ─────────────────────────────────────────────────────
 

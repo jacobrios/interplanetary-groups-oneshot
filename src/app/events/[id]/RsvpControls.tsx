@@ -38,8 +38,8 @@ export default function RsvpControls({ eventId, currentStatus, compact = false, 
     })
   }
 
-  const btnPadding = compact ? "0.375rem 0.75rem" : "0.6875rem 1rem"
-  const btnRadius = compact ? "0.5rem" : "0.625rem"
+  const btnPadding = compact ? "0.375rem 0.875rem" : "0.6875rem 1.25rem"
+  const btnRadius = "999px"
 
   return (
     <form action={handle}>
@@ -62,10 +62,8 @@ export default function RsvpControls({ eventId, currentStatus, compact = false, 
           style={{
             flex: 1,
             padding: btnPadding,
-            backgroundColor: optimisticStatus === RsvpStatus.IN
-              ? "var(--color-teal)"
-              : "var(--color-teal)",
-            color: "#0a0a0a",
+            backgroundColor: "var(--color-teal)",
+            color: "var(--action-ink)",
             fontSize: "var(--type-label)",
             fontWeight: 700,
             border: "none",

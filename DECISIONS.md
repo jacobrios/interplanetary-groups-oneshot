@@ -173,4 +173,40 @@ Live decision log for the gstack one-shot build. Entries are appended as decisio
 
 ---
 
+## Bug investigation (Orbit flow)
+
+### Bug 1: Gap-ask gate did not enforce the missing-field requirement
+**Root cause:** `handleGapSubmit` in `src/app/create/page.tsx` called `setStep("step2")` unconditionally after re-extraction, regardless of whether `data.missingFields` was still non-empty. A vague answer ("one sec, I'm not sure") would resolve as a new extraction with `missingFields` still populated, but the wizard advanced anyway. A second bypass existed: a "Skip for now" button that called `setStep("step2")` directly, without any extraction at all.  
+**Fix:** `handleGapSubmit` now checks `data.missingFields.length > 0` before advancing. If fields are still missing, it stays on the gap step and sets `gapRetry = true`, which changes Orbit's prompt from "Got it, one question" to "I need a specific time/day to set up your schedule." The "Skip for now" button was removed entirely. Per build-notes §5 hard guardrail: "ask if missing, don't guess." A group without a complete rhythm gets no Orbit-created events on day one, defeating the core product value.  
+**Deliberation:** Considered — the hard guardrail is explicit in build-notes §5 and in the existing DECISIONS.md entry above.
+
+---
+
+### Bug 3: No first event on group home after onboarding
+**Root cause:** Downstream of Bug 1. The user could bypass the gap-ask (via "Skip for now"), creating the group with `recurringActivities = null`. The `createGroupAction` fix (see "Empty home after onboarding" entry above) calls `reconcileScheduledEvents` only `if (recurringActivities)`. With no schedule, reconcile was skipped, and the group home showed "No upcoming events yet" permanently.  
+**Fix:** Bug 1 fix removes the bypass entirely. A group can now only be created after extraction produces a non-empty schedule. Once that is guaranteed, the existing `if (recurringActivities)` guard in `createGroupAction` fires correctly and seeds the first event.  
+**Deliberation:** Confirmed as consequential — not a separate failure.
+
+---
+
+### Bug 2: Group chat — full investigation, awaiting browser verification
+**Claim (user-reported):** Sending a message in the group home chat "does nothing" — the input clears on Enter and no Orbit reply appears.
+
+**Investigation:**
+1. *Data layer:* `createMessage()` with a real user ID and group ID completes and the row appears in a subsequent `findMany` query. Proven via vitest integration test.  
+2. *Auth layer:* `prisma.user.findUnique({ where: { supabaseAuthId } })` correctly resolves a user from a fresh anonymous Supabase session. `supabase.auth.getUser()` returns a valid user for a new anonymous session. Both proven via vitest tests.  
+3. *Code audit:* `sendMessageAction` validates auth, then calls `createMessage`, then runs spark detection (non-fatal catch), then calls `revalidatePath`. `GroupHome.tsx` uses `useOptimistic` correctly — the optimistic message persists until the transition settles; reversion only happens if the action returns `{ errors: { general: ... } }`. `ChatInput.tsx` captures the form's current DOM values correctly at submit time.  
+4. *Proxy middleware:* `updateSession` refreshes the session and writes new cookies to both the request (for downstream server code) and the response (for the browser). It does not redirect on invalid sessions.  
+5. *Error tracing added:* `sendMessageAction` now logs `[send-message] no supabase user` and `[send-message] supabase user found but no prisma user` to the server console with the exact auth error. If auth fails in a real browser flow, the dev server terminal will surface it.
+
+**Could not verify:** The browser extension was not connected during this session, so the full browser flow (session cookie sent with Server Action POST, feed update after `revalidatePath`) could not be observed directly.
+
+**Most likely failure mode (if still present):** The anonymous session cookies written by `createGroupAction` (via `supabase.auth.signInAnonymously()`) are not reaching the browser correctly when the Server Action redirects. This would cause `sendMessageAction` to return the "signed in" error, the optimistic message to revert, and an error message to appear below the input in red.
+
+**How to verify:** Open the group home, send any message, and observe (a) whether a red error appears below the input, and (b) whether `[send-message]` appears in the dev server console output. If yes to (b), the error message on that line identifies the exact failure.
+
+**Deliberation:** Extensive — full data layer, auth layer, and code audit performed. Browser verification deferred.
+
+---
+
 *Entries continue to be appended live during the build.*

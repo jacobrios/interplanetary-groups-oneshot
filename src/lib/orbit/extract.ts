@@ -94,10 +94,15 @@ export async function extractGroupRhythm(
     throw new Error(`Failed to parse extraction response: ${text.slice(0, 200)}`)
   }
 
-  // Normalize: ensure missingFields is always an array
+  // Normalize: ensure missingFields is always an array containing only the
+  // two defined required fields. The model occasionally includes durationMinutes
+  // or other keys; strip those so they don't trigger a false gap-ask.
   if (!Array.isArray(parsed.missingFields)) {
     parsed.missingFields = []
   }
+  parsed.missingFields = (parsed.missingFields as string[]).filter(
+    (f): f is "daysOfWeek" | "timeLocal" => f === "daysOfWeek" || f === "timeLocal"
+  )
 
   return parsed
 }

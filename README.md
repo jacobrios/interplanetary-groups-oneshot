@@ -8,7 +8,7 @@ It got about 90% of the way there in two days. Everything it got wrong was at a 
 >
 > There are two repos with this name. **This one is the experiment**, a side test of how far an agent gets on its own. It is finished as an experiment and is not being developed further.
 >
-> **The real product lives at [jrios212/interplanetary-groups](https://github.com/jrios212/interplanetary-groups)**, built the slow way, one reviewed slice at a time. If you want to see how I actually work, go there. If you want to see what I learned about working with agents, stay here.
+> **The real product lives at [jacobrios/interplanetary-groups](https://github.com/jacobrios/interplanetary-groups)**, built the slow way, one reviewed slice at a time. If you want to see how I actually work, go there. If you want to see what I learned about working with agents, stay here.
 
 ---
 
@@ -34,7 +34,7 @@ I gave the agent a deliberately unfair advantage, because that was the point of 
 - Ten annotated screen mockups covering the exact flows it was asked to build
 - Safety nets already wired: a hook that runs the test suite after every file edit, and a hook that blocks edits to applied migrations and env files
 
-**What it built, unattended, in essentially one pass** ([commit `eb6fa31`](https://github.com/jrios212/interplanetary-groups-oneshot/commit/eb6fa31)):
+**What it built, unattended, in essentially one pass** ([commit `eb6fa31`](https://github.com/jacobrios/interplanetary-groups-oneshot/commit/eb6fa31)):
 
 The three-step onboarding wizard, the Orbit extraction layer that turns free text into a structured schedule, the invite and join flow, the spark and gauge flow (idea in chat becomes a real event), a timezone display fix, a Prisma migration, and a visual pass against the mockups.
 

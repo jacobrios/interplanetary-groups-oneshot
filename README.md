@@ -106,9 +106,13 @@ This is an archived experiment, not a maintained project. As of today:
 |---|---|
 | `npx tsc --noEmit` | Clean |
 | `npm run lint` | 0 errors, 9 warnings (unused vars in test helpers) |
-| `npm test` | 92 passing, 5 failing |
+| `npm test` | 92 passing, 5 failing against the database it was last pointed at |
 
-**Why those 5 fail.** They are environment, not code. This repo's `.env` points at the same Supabase project as the active repo, and that database has since moved on: the migration this experiment generated was never applied there, and three later migrations from the real project exist there but not here. Applying this repo's migration would mutate the live project's database, so it stays unapplied and these five stay red. It's a real lesson in its own right: integration tests pointed at a shared live database are not portable, and an experiment that forks a repo inherits that fragility.
+**Why those 5 fail, and what it does not tell you.** They are environment, not code. The tests here are integration tests that hit a real database, and this experiment was still pointed at the same Supabase project as the active repo. That database moved on: the migration this experiment generated was never applied there, and three later migrations from the real project exist there but not here, so five tests hit a column that does not exist. Applying this repo's migration would have mutated the other project's database, so it stayed unapplied and those five stayed red.
+
+Against a correctly migrated database they would likely all pass, but **I did not verify that**, so treat the 92 as the number I actually observed rather than the number the code deserves. The environment file has since been removed from this archived repo, so reproducing either result means supplying your own database first.
+
+The real lesson is the one underneath: integration tests pointed at a shared live database are not portable, and a repo forked from another project inherits that coupling silently.
 
 **Two things I fixed while writing this README**, both pre-dating the one-shot and inherited from the snapshot: two lint errors (unescaped apostrophes in JSX), and a test that hardcoded a "future" date of 25 Jul 2026 and started failing on its own when the calendar passed it. It now uses offsets from the current time. That one is a good reminder that a passing test is only evidence if it could have failed, and a test with a calendar date baked in has an expiration date on it.
 
@@ -124,7 +128,18 @@ npx prisma generate
 npm run dev
 ```
 
-Needs a `.env` with `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `ANTHROPIC_API_KEY`. Point `DATABASE_URL` at your own empty Postgres and run `npx prisma migrate deploy` before the tests will pass.
+Needs a `.env` with:
+
+| Variable | What it's for |
+|---|---|
+| `DATABASE_URL` | Runtime connection, used by the Prisma driver adapter |
+| `DIRECT_URL` | Migrations. The Prisma CLI reads this one, not `DATABASE_URL` (see `prisma.config.ts`). Both can point at the same database. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase auth |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase auth |
+| `ANTHROPIC_API_KEY` | Orbit's extraction and chat copy |
+| `CRON_SECRET` | Production only. The daily cron endpoint enforces it when set, and skips the check outside production. |
+
+Point both URLs at your own empty Postgres and run `npx prisma migrate deploy` before the app or the tests will work.
 
 > **⚠️ Do not run `prisma migrate dev` or `prisma migrate reset` in this repo without checking where `DATABASE_URL` points first.** The tests here are integration tests that hit a real database, and this archived experiment's migration history has drifted from the active project it was forked from. Run against a database you are willing to lose.
 

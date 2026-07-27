@@ -18,12 +18,20 @@ process.stdin.on("end", () => {
 
   const path = (data && data.tool_input && data.tool_input.file_path) || "";
 
+  // Template files hold placeholder values and exist to be committed, so they are
+  // the opposite of a secret. Matched as exact filenames: ".env.example.bak" is
+  // NOT exempt, which is what stops the exception being widened by a suffix.
+  const templateFiles = [".env.example", ".env.sample", ".env.template"];
+  const isTemplate = templateFiles.some((name) =>
+    new RegExp(`(^|/)${name.replace(/\./g, "\\.")}$`).test(path)
+  );
+
   const protectedPatterns = [
     /(^|\/)\.env(\.|$)/, // .env, .env.local, .env.production, etc.
     /(^|\/)prisma\/migrations\//, // any already-applied migration file
   ];
 
-  const isProtected = protectedPatterns.some((re) => re.test(path));
+  const isProtected = !isTemplate && protectedPatterns.some((re) => re.test(path));
 
   if (isProtected) {
     console.error(

@@ -37,12 +37,17 @@ describe("findSoonestUpcomingEvent", () => {
     })
     groupId = group.id
 
+    // Both events are offsets from now, not fixed calendar dates, so the test
+    // cannot silently start failing once a hardcoded "future" date goes past.
+    const DAY_MS = 24 * 60 * 60 * 1000
+    const now = Date.now()
+
     // An event far in the future
     const far = await prisma.event.create({
       data: {
         groupId: group.id,
         title: "[TEST] Far Event",
-        startsAt: new Date("2030-01-15T10:00:00Z"),
+        startsAt: new Date(now + 365 * DAY_MS),
       },
     })
     eventIds.push(far.id)
@@ -52,7 +57,7 @@ describe("findSoonestUpcomingEvent", () => {
       data: {
         groupId: group.id,
         title: "[TEST] Soon Event",
-        startsAt: new Date("2026-07-25T10:00:00Z"),
+        startsAt: new Date(now + 2 * DAY_MS),
       },
     })
     eventIds.push(soon.id)

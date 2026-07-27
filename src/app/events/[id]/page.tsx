@@ -286,7 +286,8 @@ export default async function EventPage({ params }: Props) {
               paddingLeft: "2.25rem",
             }}
           >
-            I'll keep nudging folks who haven't replied. Tell me in the chat if anything changes.
+            I&apos;ll keep nudging folks who haven&apos;t replied. Tell me in the chat if anything
+            changes.
           </p>
         </div>
       </div>

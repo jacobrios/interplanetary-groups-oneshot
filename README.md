@@ -78,7 +78,7 @@ The extraction step reported a field as "missing" that the schema never required
 
 This one is not really an agent failure, it's an LLM product failure, and it's the single most transferable lesson here. Model output is a claim, not a fact. It needs one place where it gets validated and normalized before any user-facing behavior keys off it.
 
-And one thing never broke, because it was never built: the mockup showed a "beers once a month" row next to the climbing rhythm, no field in the data model could hold it, and the agent shipped everything else and dropped that row without a flag, which became the real project's headline lesson: when a design implies data, ask where that data lives before the build starts.
+And one thing never broke, because it was never built. The mockup showed a "beers once a month" row next to the climbing rhythm. Nothing in the data model could hold it, so the agent built everything else and dropped that row without a flag. That became a standing rule in the real project: when a design implies data, ask where that data lives before the build starts.
 
 ---
 
@@ -114,7 +114,7 @@ This is an archived experiment, not a maintained project. As of today:
 
 Against a correctly migrated database they would likely all pass, but **I did not verify that**, so treat the 92 as the number I actually observed rather than the number the code deserves. The environment file has since been removed from this archived repo, so reproducing either result means supplying your own database first.
 
-The real lesson is the one underneath: integration tests pointed at a live database are not portable, and when that database is handed to another project, everything still pointing at it breaks without a word.
+The real lesson is the one underneath: integration tests pointed at a live database are not portable, and when that database is handed to another project, everything still pointing at it breaks and nobody tells it why.
 
 **Two things I fixed while writing this README**, both pre-dating the one-shot and inherited from the snapshot: two lint errors (unescaped apostrophes in JSX), and a test that hardcoded a "future" date of 25 Jul 2026 and started failing on its own when the calendar passed it. It now uses offsets from the current time. That one is a good reminder that a passing test is only evidence if it could have failed, and a test with a calendar date baked in has an expiration date on it.
 
